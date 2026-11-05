@@ -16,7 +16,84 @@ function getStorage(): Storage | null {
   }
 }
 
-function isTransaction(value: unknown): value is Transaction {
+/**
+ * The demo sender shown on every receipt. Keeping this fixed makes the app
+ * look like a real UPI confirmation without ever collecting personal data.
+ */
+export const DEMO_SENDER = {
+  name: 'Demo Account Holder',
+  upiId: 'demo.user@paisa',
+  bank: 'Demo Bank',
+  account: 'Savings •••• 4821',
+} as const
+
+const ALPHANUMERIC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+const TRANSACTION_ID_PATTERN = /^[A-Za-z0-9]{14}$/
+const RRN_PATTERN = /^\d{10}$/
+
+/** FNV-1a hash, used to derive stable ids for records saved before this change. */
+function hashString(value: string): number {
+  let hash = 2166136261
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index)
+    hash = Math.imul(hash, 16777619)
+  }
+  return hash >>> 0
+}
+
+/** Small deterministic PRNG so legacy records keep the same ids on every load. */
+function seededRandom(seed: number): () => number {
+  let state = seed || 1
+  return () => {
+    state ^= state << 13
+    state ^= state >>> 17
+    state ^= state << 5
+    state >>>= 0
+    return state / 0x100000000
+  }
+}
+
+function randomTransactionId(random: () => number = Math.random): string {
+  let id = 'T'
+  for (let index = 0; index < 13; index += 1) {
+    id += ALPHANUMERIC[Math.floor(random() * ALPHANUMERIC.length)]
+  }
+  return id
+}
+
+function randomRrn(random: () => number = Math.random): string {
+  let rrn = ''
+  for (let index = 0; index < 10; index += 1) {
+    rrn += Math.floor(random() * 10)
+  }
+  return rrn
+}
+
+/** A stored record may predate the receipt fields, so they are all optional. */
+type StoredTransaction = Omit<
+  Transaction,
+  | 'transactionId'
+  | 'rrn'
+  | 'senderName'
+  | 'senderUpiId'
+  | 'senderBank'
+  | 'senderAccount'
+  | 'currency'
+> &
+  Partial<
+    Pick<
+      Transaction,
+      | 'transactionId'
+      | 'rrn'
+      | 'senderName'
+      | 'senderUpiId'
+      | 'senderBank'
+      | 'senderAccount'
+      | 'currency'
+    >
+  >
+
+function isTransaction(value: unknown): value is StoredTransaction {
   if (!value || typeof value !== 'object') return false
   const record = value as Record<string, unknown>
   return (
@@ -28,6 +105,29 @@ function isTransaction(value: unknown): value is Transaction {
     typeof record.date === 'string' &&
     typeof record.timestamp === 'number'
   )
+}
+
+/** Fills in receipt fields that older saved payments did not store. */
+function normalizeTransaction(record: StoredTransaction): Transaction {
+  const seed = `${record.id}:${record.timestamp}`
+  const next = seededRandom(hashString(seed))
+
+  return {
+    ...record,
+    currency: record.currency ?? 'INR',
+    transactionId:
+      record.transactionId && TRANSACTION_ID_PATTERN.test(record.transactionId)
+        ? record.transactionId
+        : randomTransactionId(next),
+    rrn:
+      record.rrn && RRN_PATTERN.test(record.rrn)
+        ? record.rrn
+        : randomRrn(seededRandom(hashString(`${seed}:rrn`))),
+    senderName: record.senderName ?? DEMO_SENDER.name,
+    senderUpiId: record.senderUpiId ?? DEMO_SENDER.upiId,
+    senderBank: record.senderBank ?? DEMO_SENDER.bank,
+    senderAccount: record.senderAccount ?? DEMO_SENDER.account,
+  }
 }
 
 /** Returns all stored payments, newest first. */
@@ -43,6 +143,7 @@ export function loadTransactions(): Transaction[] {
     if (!Array.isArray(parsed)) return []
     return parsed
       .filter(isTransaction)
+      .map(normalizeTransaction)
       .sort((a, b) => b.timestamp - a.timestamp)
       .slice(0, HISTORY_LIMIT)
   } catch {
@@ -97,13 +198,51 @@ export function saveSoundEnabled(enabled: boolean): void {
   getStorage()?.setItem(SOUND_KEY, enabled ? 'on' : 'off')
 }
 
-/** Generates a 12-digit UPI-style reference. */
+/** Generates a 12-digit UPI-style reference (the UTR on the receipt). */
 export function generateReference(): string {
   const stamp = Date.now().toString().slice(-9)
   const random = Math.floor(Math.random() * 1000)
     .toString()
     .padStart(3, '0')
   return `${stamp}${random}`
+}
+
+interface CreateTransactionInput {
+  merchantName: string
+  payeeUpiId: string
+  amount: number
+  /** Defaults to now. */
+  timestamp?: number
+}
+
+/**
+ * Builds a complete, demo-safe payment record with the identifiers a real UPI
+ * receipt shows: a 14-character transaction id, a 10-digit RRN and a UTR.
+ */
+export function createTransaction(input: CreateTransactionInput): Transaction {
+  const timestamp = input.timestamp ?? Date.now()
+  const reference = generateReference()
+  const id =
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `txn_${timestamp}_${Math.random().toString(36).slice(2, 10)}`
+
+  return {
+    id,
+    reference,
+    transactionId: randomTransactionId(),
+    rrn: randomRrn(),
+    merchantName: input.merchantName,
+    payeeUpiId: input.payeeUpiId,
+    amount: input.amount,
+    currency: 'INR',
+    date: formatTimestamp(timestamp),
+    timestamp,
+    senderName: DEMO_SENDER.name,
+    senderUpiId: DEMO_SENDER.upiId,
+    senderBank: DEMO_SENDER.bank,
+    senderAccount: DEMO_SENDER.account,
+  }
 }
 
 /** Formats a timestamp for the receipt. */

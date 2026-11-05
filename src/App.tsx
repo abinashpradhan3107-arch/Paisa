@@ -18,8 +18,7 @@ import type {
 import {
   addTransaction,
   clearTransactions,
-  formatTimestamp,
-  generateReference,
+  createTransaction,
   loadSoundEnabled,
   loadTheme,
   loadTransactions,
@@ -100,18 +99,11 @@ function App() {
     if (step !== 'processing' || !payment) return
 
     const timer = window.setTimeout(() => {
-      const timestamp = Date.now()
-      const reference = generateReference()
-      const record: Transaction = {
-        id: reference,
-        reference,
+      const record = createTransaction({
         merchantName: payment.merchantName,
         payeeUpiId: payment.payeeUpiId,
         amount: payment.amount,
-        currency: 'INR',
-        date: formatTimestamp(timestamp),
-        timestamp,
-      }
+      })
 
       setTransaction(record)
       setTransactions(addTransaction(record))

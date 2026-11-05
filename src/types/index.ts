@@ -38,8 +38,12 @@ export interface PaymentDetails {
 export interface Transaction {
   /** Unique id, also used as the reference. */
   id: string
-  /** 12-digit UPI-style reference. */
+  /** 12-digit UPI-style reference (shown as the UTR). */
   reference: string
+  /** 14-character alphanumeric transaction id shown on the receipt. */
+  transactionId: string
+  /** 10-digit numeric Reference Retrieval Number (RRN). */
+  rrn: string
   merchantName: string
   payeeUpiId: string
   /** Amount in rupees. */
@@ -49,6 +53,14 @@ export interface Transaction {
   date: string
   /** Unix timestamp in milliseconds. */
   timestamp: number
+  /** Demo sender name shown in the "Paid from" block. */
+  senderName: string
+  /** Demo sender UPI ID. */
+  senderUpiId: string
+  /** Demo sender bank. */
+  senderBank: string
+  /** Masked demo sender account, e.g. "Savings •••• 4821". */
+  senderAccount: string
 }
 
 /** Reasons the QR scanner can fail. */

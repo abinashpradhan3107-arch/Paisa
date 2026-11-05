@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { ArrowUpRight } from 'lucide-react'
+import { ArrowUpRight, X } from 'lucide-react'
 import type { Transaction } from '../types'
 import { formatINR } from '../utils/upiParser'
 import { formatMonthLabel } from '../utils/storage'
+import { Receipt } from '../components/Receipt'
 import { TransactionItem } from '../components/TransactionItem'
 
 interface HistoryPageProps {
@@ -36,6 +37,11 @@ export function HistoryPage({
   onClear,
 }: HistoryPageProps) {
   const [confirmClear, setConfirmClear] = useState(false)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const selected =
+    selectedId === null
+      ? null
+      : transactions.find((transaction) => transaction.id === selectedId) ?? null
   const total = transactions.reduce((sum, item) => sum + item.amount, 0)
   const groups = groupByMonth(transactions)
 
@@ -92,11 +98,62 @@ export function HistoryPage({
                     key={transaction.id}
                     transaction={transaction}
                     onRemove={onRemove}
+                    onOpen={setSelectedId}
                   />
                 ))}
               </ul>
             </section>
           ))}
+        </div>
+      )}
+
+      {selected && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="receipt-title"
+          onClick={() => setSelectedId(null)}
+        >
+          <div
+            className="max-h-[90dvh] w-full max-w-[520px] animate-sheet overflow-y-auto rounded-t-2xl bg-paper px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mx-auto h-1 w-9 rounded-full bg-line" />
+
+            <div className="mt-4 flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="label">Payment successful</p>
+                <h2
+                  id="receipt-title"
+                  className="mt-1 font-display text-[36px] leading-none tabular-nums text-ink"
+                >
+                  {formatINR(selected.amount)}
+                </h2>
+                <p className="mt-2 truncate text-sm text-ink-soft">
+                  Paid to {selected.merchantName}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedId(null)}
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-line text-ink-soft transition hover:bg-paper-2 hover:text-ink"
+                aria-label="Close receipt"
+              >
+                <X className="h-4 w-4" strokeWidth={1.7} aria-hidden="true" />
+              </button>
+            </div>
+
+            <Receipt transaction={selected} className="mt-5" />
+
+            <button
+              type="button"
+              onClick={() => setSelectedId(null)}
+              className="btn-primary mt-5 w-full"
+            >
+              Done
+            </button>
+          </div>
         </div>
       )}
 

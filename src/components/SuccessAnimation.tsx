@@ -3,6 +3,7 @@ import { Check } from 'lucide-react'
 import type { Transaction } from '../types'
 import { formatINR } from '../utils/upiParser'
 import { playSuccessSound } from '../utils/sound'
+import { Receipt } from './Receipt'
 
 const HOLD_MS = 2300
 const EXIT_MS = 420
@@ -14,29 +15,6 @@ interface SuccessAnimationProps {
   onNewPayment: () => void
   onViewHistory: () => void
   soundEnabled: boolean
-}
-
-function DetailRow({
-  label,
-  value,
-  mono = false,
-}: {
-  label: string
-  value: string
-  mono?: boolean
-}) {
-  return (
-    <div className="flex items-start justify-between gap-6 py-3">
-      <dt className="shrink-0 text-xs text-ink-faint">{label}</dt>
-      <dd
-        className={`min-w-0 break-all text-right text-sm font-medium text-ink ${
-          mono ? 'font-mono text-xs tracking-wide' : ''
-        }`}
-      >
-        {value}
-      </dd>
-    </div>
-  )
 }
 
 /** Confirmation screen: a green success wipe, then the payment receipt. */
@@ -110,12 +88,7 @@ export function SuccessAnimation({
           </p>
         </div>
 
-        <dl className="mt-8 divide-y divide-line border-y border-line">
-          <DetailRow label="To" value={transaction.merchantName} />
-          <DetailRow label="UPI ID" value={transaction.payeeUpiId} mono />
-          <DetailRow label="Date" value={transaction.date} />
-          <DetailRow label="Reference" value={transaction.reference} mono />
-        </dl>
+        <Receipt transaction={transaction} className="mt-8" />
 
         <div className="mt-6 flex gap-2">
           <button
@@ -196,6 +169,9 @@ export function SuccessAnimation({
               </p>
               <p className="animate-rise mt-3 text-sm text-white/75">
                 Paid to {transaction.merchantName}
+              </p>
+              <p className="animate-rise mt-6 text-[10px] font-semibold uppercase tracking-[0.24em] text-white/45">
+                Demo · No real money
               </p>
             </div>
 
