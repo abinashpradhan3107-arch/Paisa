@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowUpRight, X } from 'lucide-react'
+import { ArrowUpRight, Check, X } from 'lucide-react'
 import type { Transaction } from '../types'
 import { formatINR } from '../utils/upiParser'
 import { formatMonthLabel } from '../utils/storage'
@@ -121,23 +121,25 @@ export function HistoryPage({
           >
             <div className="mx-auto h-1 w-9 rounded-full bg-line" />
 
-            <div className="mt-4 flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <p className="label">Payment successful</p>
-                <h2
-                  id="receipt-title"
-                  className="mt-1 font-display text-[36px] leading-none tabular-nums text-ink"
-                >
-                  {formatINR(selected.amount)}
-                </h2>
-                <p className="mt-2 truncate text-sm text-ink-soft">
-                  Paid to {selected.merchantName}
-                </p>
+            <div className="mt-3 flex items-center justify-between pb-3 border-b border-line/50">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500 text-zinc-950">
+                  <Check className="h-4 w-4" strokeWidth={3} />
+                </div>
+                <div>
+                  <h2
+                    id="receipt-title"
+                    className="text-sm sm:text-base font-semibold text-ink leading-tight"
+                  >
+                    Transaction Details
+                  </h2>
+                  <p className="text-[11px] text-ink-soft">{selected.date}</p>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedId(null)}
-                className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-line text-ink-soft transition hover:bg-paper-2 hover:text-ink"
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-line text-ink-soft transition hover:bg-paper-2 hover:text-ink"
                 aria-label="Close receipt"
               >
                 <X className="h-4 w-4" strokeWidth={1.7} aria-hidden="true" />

@@ -1,12 +1,21 @@
 import { useRef, useState } from 'react'
-import { Check, Copy, Info } from 'lucide-react'
+import {
+  Check,
+  ChevronDown,
+  Copy,
+  Info,
+  ReceiptText,
+} from 'lucide-react'
 import type { Transaction } from '../types'
+import { formatINR } from '../utils/upiParser'
 
 interface ReceiptProps {
   transaction: Transaction
   className?: string
+  defaultExpanded?: boolean
 }
 
+/** Generates initials from a name (max 2 uppercase letters). */
 function initials(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean)
   if (words.length === 0) return 'UP'
@@ -14,7 +23,60 @@ function initials(name: string): string {
   return `${words[0][0]}${words[1][0]}`.toUpperCase()
 }
 
-/** Writes to the clipboard, falling back to a hidden textarea when needed. */
+/** Formats a phone-number based UPI ID with masking e.g. ******5654-2@ibl */
+function formatMaskedUpi(upiId: string): string {
+  if (!upiId) return ''
+  const parts = upiId.split('@')
+  if (parts.length !== 2) return upiId
+  const [user, handle] = parts
+
+  // If user starts with or contains digits (phone number VPA)
+  if (/^\d/.test(user) || user.length >= 10) {
+    const visibleLength = user.includes('-') ? 6 : 4
+    const visibleEnd = user.slice(-visibleLength)
+    return `******${visibleEnd}@${handle}`
+  }
+
+  return upiId
+}
+
+/** Formats timestamp into date and time */
+function formatDateTime(timestamp?: number, fallbackDate?: string): {
+  date: string
+  time: string
+  full: string
+} {
+  const d = timestamp ? new Date(timestamp) : new Date()
+  const isValid = !isNaN(d.getTime())
+
+  if (!isValid && fallbackDate) {
+    return {
+      date: fallbackDate,
+      time: '',
+      full: fallbackDate,
+    }
+  }
+
+  const date = d.toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+
+  const time = d.toLocaleTimeString('en-IN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  })
+
+  return {
+    date,
+    time,
+    full: `${date}, ${time}`,
+  }
+}
+
+/** Clipboard utility with fallback */
 async function copyToClipboard(value: string): Promise<boolean> {
   try {
     if (navigator.clipboard?.writeText) {
@@ -22,7 +84,7 @@ async function copyToClipboard(value: string): Promise<boolean> {
       return true
     }
   } catch {
-    /* Fall through to the legacy path. */
+    /* Fallback below */
   }
 
   try {
@@ -61,7 +123,7 @@ function CopyButton({ value, label }: { value: string; label: string }) {
       className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-ink-faint transition hover:bg-paper-2 hover:text-ink"
     >
       {copied ? (
-        <Check className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+        <Check className="h-3.5 w-3.5 text-emerald-400" strokeWidth={2.2} aria-hidden="true" />
       ) : (
         <Copy className="h-3.5 w-3.5" strokeWidth={1.7} aria-hidden="true" />
       )}
@@ -69,122 +131,207 @@ function CopyButton({ value, label }: { value: string; label: string }) {
   )
 }
 
-function DetailRow({
-  label,
-  value,
-  mono = false,
-  copyLabel,
-  accent = false,
-}: {
-  label: string
-  value: string
-  mono?: boolean
-  copyLabel?: string
-  accent?: boolean
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4 py-3">
-      <dt className="shrink-0 text-xs text-ink-faint">{label}</dt>
-      <dd className="flex min-w-0 items-center justify-end gap-1.5">
-        {accent && (
-          <span
-            className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent"
-            aria-hidden="true"
-          />
-        )}
-        <span
-          className={`min-w-0 break-all text-right ${
-            mono
-              ? 'font-mono text-[12px] tracking-wide text-ink'
-              : 'text-sm font-medium text-ink'
-          } ${accent ? 'text-accent' : ''}`}
-        >
-          {value}
-        </span>
-        {copyLabel && <CopyButton value={value} label={copyLabel} />}
-      </dd>
-    </div>
-  )
-}
-
 /**
- * The receipt body shared by the payment confirmation screen and the history
- * detail sheet. It mirrors the sections a real UPI app shows: who was paid,
- * which account paid, and the bank identifiers for the transfer.
+ * Premium fintech transaction receipt card with:
+ * - Paid to merchant info with avatar, masked UPI ID and amount
+ * - Conditional Banking Name row
+ * - Expandable Transfer Details with Demo reference, mode, date, time
+ * - Debited from source account
+ * - Persistent DEMO disclosure
  */
-export function Receipt({ transaction, className = '' }: ReceiptProps) {
+export function Receipt({
+  transaction,
+  className = '',
+  defaultExpanded = true,
+}: ReceiptProps) {
+  const [transferDetailsOpen, setTransferDetailsOpen] = useState(defaultExpanded)
+  const maskedUpi = formatMaskedUpi(transaction.payeeUpiId)
+  const dt = formatDateTime(transaction.timestamp, transaction.date)
+
+  // Banking Name section is shown only if merchantName is a genuine name distinct from payee UPI ID
+  const hasBankingName = Boolean(
+    transaction.merchantName &&
+      transaction.merchantName !== transaction.payeeUpiId &&
+      !transaction.merchantName.includes('@'),
+  )
+
   return (
-    <div className={`text-left ${className}`}>
-      <section className="rounded-2xl border border-line bg-card px-4 py-4">
-        <p className="label">Paid to</p>
-        <div className="mt-2 flex items-center gap-3">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent-soft text-[12px] font-semibold text-accent">
-            {initials(transaction.merchantName)}
-          </span>
-          <div className="min-w-0">
-            <p className="truncate text-[15px] font-medium text-ink">
-              {transaction.merchantName}
-            </p>
-            <p className="truncate font-mono text-[11px] tracking-wide text-ink-faint">
-              {transaction.payeeUpiId}
+    <div className={`space-y-3.5 text-left ${className}`}>
+      {/* 1. Main Charcoal Card: Paid to + Banking Name + Transfer Details */}
+      <section className="rounded-2xl border border-line bg-card p-4 sm:p-5 shadow-sm">
+        {/* Paid to label */}
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-soft">
+          Paid to
+        </p>
+
+        {/* Merchant Info Row */}
+        <div className="mt-3 flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#1e201b] border border-line text-xs font-semibold text-ink-soft select-none">
+              {initials(transaction.merchantName)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="truncate text-[15px] sm:text-[16px] font-semibold leading-tight text-ink">
+                {transaction.merchantName}
+              </h2>
+              <p className="mt-0.5 truncate font-mono text-[12px] text-ink-soft">
+                {maskedUpi}
+              </p>
+            </div>
+          </div>
+
+          <div className="shrink-0 text-right">
+            <p className="font-sans text-[20px] sm:text-[22px] font-bold tracking-tight tabular-nums text-ink">
+              {formatINR(transaction.amount)}
             </p>
           </div>
         </div>
-      </section>
 
-      <section className="mt-4 rounded-2xl border border-line bg-card px-4 py-4">
-        <p className="label">Paid from</p>
-        <div className="mt-2 flex items-center gap-3">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-paper-2 text-[12px] font-semibold text-ink-soft">
-            {initials(transaction.senderName)}
-          </span>
-          <div className="min-w-0">
-            <p className="truncate text-[15px] font-medium text-ink">
-              {transaction.senderName}
-            </p>
-            <p className="truncate text-xs text-ink-soft">
-              {transaction.senderBank} · {transaction.senderAccount}
-            </p>
-            <p className="truncate font-mono text-[11px] tracking-wide text-ink-faint">
-              {transaction.senderUpiId}
-            </p>
+        {/* Banking Name Row (Conditional: only shown when banking/display name exists) */}
+        {hasBankingName && (
+          <div className="mt-3.5 border-t border-line/60 pt-3 flex items-center justify-between gap-4 text-xs">
+            <span className="text-ink-soft">Banking Name</span>
+            <div className="flex min-w-0 items-center justify-end gap-1.5">
+              <span className="truncate font-medium text-ink text-right">
+                {transaction.merchantName}
+              </span>
+              <Info
+                className="h-3.5 w-3.5 shrink-0 text-ink-faint"
+                strokeWidth={1.8}
+                aria-hidden="true"
+              />
+            </div>
           </div>
+        )}
+
+        {/* Transfer Details Expandable Header */}
+        <div className="mt-3.5 border-t border-line/60 pt-3">
+          <button
+            type="button"
+            onClick={() => setTransferDetailsOpen((prev) => !prev)}
+            aria-expanded={transferDetailsOpen}
+            className="flex w-full items-center justify-between rounded-lg py-1 text-left transition hover:opacity-80"
+          >
+            <div className="flex items-center gap-2">
+              <ReceiptText
+                className="h-4 w-4 text-ink-soft"
+                strokeWidth={1.8}
+                aria-hidden="true"
+              />
+              <span className="text-xs sm:text-sm font-medium text-ink">
+                Transfer Details
+              </span>
+            </div>
+            <ChevronDown
+              className={`h-4 w-4 text-ink-soft transition-transform duration-200 ${
+                transferDetailsOpen ? 'rotate-180' : ''
+              }`}
+              strokeWidth={1.8}
+              aria-hidden="true"
+            />
+          </button>
+
+          {/* Transfer Details Expandable Content */}
+          {transferDetailsOpen && (
+            <dl className="mt-3 divide-y divide-line/50 border-t border-line/50 text-xs">
+              {/* Demo Reference Number */}
+              <div className="flex items-center justify-between gap-4 py-2.5">
+                <dt className="shrink-0 text-ink-soft">Demo Reference Number</dt>
+                <dd className="flex min-w-0 items-center justify-end gap-1.5 font-mono text-[11px] sm:text-xs text-ink">
+                  <span className="break-all text-right">
+                    DEMO-{transaction.reference}
+                  </span>
+                  <CopyButton
+                    value={`DEMO-${transaction.reference}`}
+                    label="demo reference number"
+                  />
+                </dd>
+              </div>
+
+              {/* Payment Mode */}
+              <div className="flex items-center justify-between gap-4 py-2.5">
+                <dt className="shrink-0 text-ink-soft">Payment Mode</dt>
+                <dd className="text-right font-medium text-ink">
+                  UPI QR Simulation
+                </dd>
+              </div>
+
+              {/* Payee UPI ID */}
+              <div className="flex items-center justify-between gap-4 py-2.5">
+                <dt className="shrink-0 text-ink-soft">Payee UPI ID</dt>
+                <dd className="flex min-w-0 items-center justify-end gap-1.5 font-mono text-[11px] sm:text-xs text-ink">
+                  <span className="break-all text-right">
+                    {transaction.payeeUpiId}
+                  </span>
+                  <CopyButton
+                    value={transaction.payeeUpiId}
+                    label="payee UPI ID"
+                  />
+                </dd>
+              </div>
+
+              {/* Transaction Date */}
+              <div className="flex items-center justify-between gap-4 py-2.5">
+                <dt className="shrink-0 text-ink-soft">Transaction Date</dt>
+                <dd className="text-right font-medium text-ink">{dt.date}</dd>
+              </div>
+
+              {/* Transaction Time */}
+              {dt.time && (
+                <div className="flex items-center justify-between gap-4 py-2.5">
+                  <dt className="shrink-0 text-ink-soft">Transaction Time</dt>
+                  <dd className="text-right font-medium text-ink">{dt.time}</dd>
+                </div>
+              )}
+
+              {/* Amount */}
+              <div className="flex items-center justify-between gap-4 py-2.5">
+                <dt className="shrink-0 text-ink-soft">Amount</dt>
+                <dd className="text-right font-semibold text-ink">
+                  {formatINR(transaction.amount)}
+                </dd>
+              </div>
+            </dl>
+          )}
         </div>
       </section>
 
-      <section className="mt-4">
-        <p className="label">Transaction details</p>
-        <dl className="mt-1 divide-y divide-line border-y border-line">
-          <DetailRow
-            label="Transaction ID"
-            value={transaction.transactionId}
-            mono
-            copyLabel="transaction ID"
-          />
-          <DetailRow
-            label="RRN"
-            value={transaction.rrn}
-            mono
-            copyLabel="RRN"
-          />
-          <DetailRow
-            label="UTR"
-            value={transaction.reference}
-            mono
-            copyLabel="UTR"
-          />
-          <DetailRow label="Date & time" value={transaction.date} />
-          <DetailRow label="Status" value="Success" accent />
-        </dl>
-      </section>
+      {/* 2. Paid / Debited From Card */}
+      {transaction.senderBank && (
+        <section className="rounded-2xl border border-line bg-card p-4 sm:p-5 shadow-sm">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-soft">
+            Debited from
+          </p>
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#1e201b] border border-line text-xs font-semibold text-ink-soft select-none">
+                {initials(transaction.senderBank)}
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-ink">
+                  {transaction.senderBank}
+                </p>
+                <p className="truncate text-xs text-ink-soft">
+                  {transaction.senderAccount}
+                </p>
+              </div>
+            </div>
+            <div className="shrink-0 text-right">
+              <span className="font-mono text-sm font-medium text-ink-soft">
+                −{formatINR(transaction.amount)}
+              </span>
+            </div>
+          </div>
+        </section>
+      )}
 
-      <p className="mt-4 flex items-start gap-1.5 text-[10px] leading-relaxed text-ink-faint">
-        <Info className="mt-px h-3 w-3 shrink-0" strokeWidth={1.7} aria-hidden="true" />
-        <span>
-          {transaction.currency} · Demo payment. This is a simulated receipt and
-          no money was transferred.
-        </span>
-      </p>
+      {/* 3. Demo Disclosure Persistent Banner */}
+      <div className="pt-2 text-center">
+        <div className="inline-flex items-center gap-2 rounded-full border border-line bg-card/60 px-3.5 py-1.5 text-[10px] sm:text-[11px] font-medium text-ink-faint">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500/80" />
+          <span>DEMO TRANSACTION · NO MONEY TRANSFERRED</span>
+        </div>
+      </div>
     </div>
   )
 }
