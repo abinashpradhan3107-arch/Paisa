@@ -1,0 +1,246 @@
+@import 'tailwindcss';
+
+/* Class-based dark mode (the app toggles `.dark` on <html>). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'Instrument Sans Variable', ui-sans-serif, system-ui, -apple-system,
+    'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-display: 'Instrument Serif', ui-serif, Georgia, 'Times New Roman', serif;
+
+  --animate-fade-up: fade-up 0.4s ease-out both;
+  --animate-shake: shake 0.35s ease-in-out;
+  --animate-sheet: sheet 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-scanline: scanline 2.8s ease-in-out infinite;
+  --animate-progress: progress 1.5s ease-in-out forwards;
+  --animate-wipe-down: wipe-down 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-wipe-up: wipe-up 0.42s cubic-bezier(0.55, 0, 1, 0.45) both;
+  --animate-check: check-draw 0.55s 0.3s cubic-bezier(0.65, 0, 0.35, 1) both;
+  --animate-rise: rise-in 0.5s 0.34s ease-out both;
+  --animate-halo: halo 1.15s 0.28s ease-out both;
+}
+
+/* Semantic colours, swapped by the `.dark` class at runtime. */
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+}
+
+:root {
+  --paper: #f4f1e9;
+  --paper-2: #e9e4d8;
+  --card: #fffdf8;
+  --ink: #191812;
+  --ink-soft: #6c685d;
+  --ink-faint: #999386;
+  --line: #dcd6c8;
+  --accent: #11543f;
+  --accent-hover: #0b4030;
+  --accent-soft: #e2eee8;
+  --on-accent: #fffdf8;
+  --danger: #9d3a2b;
+  --danger-soft: #f5e7e3;
+}
+
+.dark {
+  --paper: #10110e;
+  --paper-2: #0a0b09;
+  --card: #171814;
+  --ink: #f1eee4;
+  --ink-soft: #a7a295;
+  --ink-faint: #6f6b60;
+  --line: #2a2b25;
+  --accent: #7fd3b0;
+  --accent-hover: #9ae3c5;
+  --accent-soft: #17312a;
+  --on-accent: #0a1f18;
+  --danger: #e8907f;
+  --danger-soft: #2e1c18;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+  75% {
+    transform: translateX(-2px);
+  }
+}
+
+@keyframes sheet {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes wipe-down {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes wipe-up {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-100%);
+  }
+}
+
+@keyframes check-draw {
+  from {
+    stroke-dashoffset: 40;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes halo {
+  0% {
+    transform: scale(0.82);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1.85);
+    opacity: 0;
+  }
+}
+
+@keyframes scanline {
+  0% {
+    top: 14%;
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  88% {
+    opacity: 1;
+  }
+  100% {
+    top: 86%;
+    opacity: 0;
+  }
+}
+
+@keyframes progress {
+  from {
+    transform: translateX(-110%);
+  }
+  to {
+    transform: translateX(320%);
+  }
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: var(--paper-2);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  ::selection {
+    background-color: var(--accent);
+    color: var(--on-accent);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .label {
+    @apply text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-faint;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-ink px-5 py-3.5 text-sm font-semibold text-paper transition hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  .btn-quiet {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-line px-5 py-3.5 text-sm font-semibold text-ink transition hover:bg-paper-2 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40;
+  }
+}
+
+/* html5-qrcode injects its own markup; make the video fill our frame. */
+.qr-reader video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+}
+
+.qr-reader img {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
