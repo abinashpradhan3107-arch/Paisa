@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { Check } from 'lucide-react'
 import type { Transaction } from '../types'
 import { playSuccessSound } from '../utils/sound'
 import { Receipt } from './Receipt'
@@ -33,8 +34,8 @@ function formatHeaderDateTime(timestamp?: number, fallbackDate?: string): string
 }
 
 /**
- * Redesigned Paisa Payment Success / Transaction Details Page
- * Compliant with PhonePe layout & information hierarchy while adhering to Paisa's dark fintech aesthetic.
+ * Curie Payment Success / Transaction Details Page
+ * Restrained, high-craft fintech styling with neutral accents and clear simulation disclosures.
  */
 export function SuccessAnimation({
   transaction,
@@ -57,39 +58,26 @@ export function SuccessAnimation({
 
   return (
     <div className="mx-auto w-full max-w-[480px] px-4 py-5 sm:px-6 sm:py-7 animate-fade-up">
-      {/* 1. App Header: Paisa Wordmark Logo & Status Pill */}
+      {/* 1. App Header: Curie Wordmark Logo & Restrained Status Pill */}
       <header className="flex items-center justify-between pb-4 border-b border-line/60">
-        <div className="flex items-center gap-1 select-none">
+        <div className="flex items-center select-none">
           <span className="font-display text-[26px] leading-none tracking-[-0.01em] text-ink">
-            paisa
+            curie
           </span>
-          <span className="mb-1 h-1.5 w-1.5 rounded-full bg-emerald-500" />
         </div>
-        <div className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-400 border border-emerald-500/20">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span>Paid</span>
+        <div className="rounded-full border border-line bg-card/60 px-2.5 py-0.5 text-[11px] font-medium text-ink-soft">
+          Successful
         </div>
       </header>
 
-      {/* 2. Transaction Success Header (Clean Horizontal Layout) */}
+      {/* 2. Transaction Success Header (Clean Horizontal Layout, Restrained Indicator) */}
       <div className="mt-5 flex items-center gap-3.5">
-        {/* Subtle, polished green success indicator */}
-        <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-500 shadow-md shadow-emerald-950/40">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="3.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="h-5 w-5 text-zinc-950"
-          >
-            <path d="M20 6 9 17l-5-5" />
-          </svg>
+        <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#185c40] text-white border border-[#237553]/50">
+          <Check className="h-5 w-5" strokeWidth={2.5} aria-hidden="true" />
         </div>
 
         <div className="min-w-0 flex-1">
-          <h1 className="text-[18px] sm:text-[20px] font-semibold tracking-tight text-ink">
+          <h1 className="text-[18px] sm:text-[19px] font-semibold tracking-tight text-ink">
             Transaction Successful
           </h1>
           <p className="mt-0.5 text-xs text-ink-soft">
@@ -121,7 +109,7 @@ export function SuccessAnimation({
 
       {/* 5. Footer Prototype Indicator */}
       <p className="mt-4 text-center text-[10px] text-ink-faint/60">
-        Paisa · Local Prototype
+        Curie · Local Prototype
       </p>
     </div>
   )

@@ -1,13 +1,16 @@
 import type { ThemePreference, Transaction } from '../types'
 
-const HISTORY_KEY = 'paisa.history.v1'
-const THEME_KEY = 'paisa.theme.v1'
-const SOUND_KEY = 'paisa.sound.v1'
+const HISTORY_KEY = 'curie.history.v1'
+const LEGACY_HISTORY_KEY = 'paisa.history.v1'
+const THEME_KEY = 'curie.theme.v1'
+const LEGACY_THEME_KEY = 'paisa.theme.v1'
+const SOUND_KEY = 'curie.sound.v1'
+const LEGACY_SOUND_KEY = 'paisa.sound.v1'
 const HISTORY_LIMIT = 200
 
 function getStorage(): Storage | null {
   try {
-    const probe = '__paisa_probe__'
+    const probe = '__curie_probe__'
     window.localStorage.setItem(probe, '1')
     window.localStorage.removeItem(probe)
     return window.localStorage
@@ -17,15 +20,16 @@ function getStorage(): Storage | null {
 }
 
 /**
- * The demo sender shown on every receipt. Keeping this fixed makes the app
- * look like a real UPI confirmation without ever collecting personal data.
+ * The simulated sender shown on receipts.
  */
-export const DEMO_SENDER = {
-  name: 'Demo Account Holder',
-  upiId: 'demo.user@paisa',
-  bank: 'Demo Bank',
-  account: 'Savings •••• 4821',
+export const SIMULATED_SENDER = {
+  name: 'Account Holder',
+  upiId: 'user@curie',
+  bank: 'Simulated Account',
+  account: '•••• 4821',
 } as const
+
+export const DEMO_SENDER = SIMULATED_SENDER
 
 const ALPHANUMERIC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 const TRANSACTION_ID_PATTERN = /^[A-Za-z0-9]{14}$/
@@ -123,10 +127,13 @@ function normalizeTransaction(record: StoredTransaction): Transaction {
       record.rrn && RRN_PATTERN.test(record.rrn)
         ? record.rrn
         : randomRrn(seededRandom(hashString(`${seed}:rrn`))),
-    senderName: record.senderName ?? DEMO_SENDER.name,
-    senderUpiId: record.senderUpiId ?? DEMO_SENDER.upiId,
-    senderBank: record.senderBank ?? DEMO_SENDER.bank,
-    senderAccount: record.senderAccount ?? DEMO_SENDER.account,
+    senderName: record.senderName ?? SIMULATED_SENDER.name,
+    senderUpiId: record.senderUpiId ?? SIMULATED_SENDER.upiId,
+    senderBank:
+      record.senderBank && record.senderBank !== 'Demo Bank'
+        ? record.senderBank
+        : SIMULATED_SENDER.bank,
+    senderAccount: record.senderAccount ?? SIMULATED_SENDER.account,
   }
 }
 
@@ -135,7 +142,8 @@ export function loadTransactions(): Transaction[] {
   const storage = getStorage()
   if (!storage) return []
 
-  const stored = storage.getItem(HISTORY_KEY)
+  const stored =
+    storage.getItem(HISTORY_KEY) ?? storage.getItem(LEGACY_HISTORY_KEY)
   if (!stored) return []
 
   try {
@@ -177,7 +185,8 @@ export function clearTransactions(): void {
 
 /** Reads the saved theme preference. */
 export function loadTheme(): ThemePreference {
-  const saved = getStorage()?.getItem(THEME_KEY)
+  const saved =
+    getStorage()?.getItem(THEME_KEY) ?? getStorage()?.getItem(LEGACY_THEME_KEY)
   return saved === 'light' || saved === 'dark' || saved === 'system'
     ? saved
     : 'system'
@@ -190,7 +199,9 @@ export function saveTheme(theme: ThemePreference): void {
 
 /** Reads the success-sound preference (on by default). */
 export function loadSoundEnabled(): boolean {
-  return getStorage()?.getItem(SOUND_KEY) !== 'off'
+  const saved =
+    getStorage()?.getItem(SOUND_KEY) ?? getStorage()?.getItem(LEGACY_SOUND_KEY)
+  return saved !== 'off'
 }
 
 /** Persists the success-sound preference. */
@@ -238,10 +249,10 @@ export function createTransaction(input: CreateTransactionInput): Transaction {
     currency: 'INR',
     date: formatTimestamp(timestamp),
     timestamp,
-    senderName: DEMO_SENDER.name,
-    senderUpiId: DEMO_SENDER.upiId,
-    senderBank: DEMO_SENDER.bank,
-    senderAccount: DEMO_SENDER.account,
+    senderName: SIMULATED_SENDER.name,
+    senderUpiId: SIMULATED_SENDER.upiId,
+    senderBank: SIMULATED_SENDER.bank,
+    senderAccount: SIMULATED_SENDER.account,
   }
 }
 

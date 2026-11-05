@@ -163,7 +163,7 @@ export function SettingsPage({
       <section className="mt-8">
         <h2 className="label">About</h2>
         <p className="mt-2 text-sm leading-relaxed text-ink-soft">
-          Paisa is a UPI checkout interface built for design and testing. It runs
+          Curie is a UPI checkout interface built for design and testing. It runs
           entirely in your browser and does not connect to a bank or payment
           network.
         </p>

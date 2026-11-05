@@ -1,6 +1,6 @@
-# Paisa — UPI checkout
+# Curie — UPI checkout
 
-Paisa is a small, local-first UPI checkout interface built with React,
+Curie is a small, local-first UPI checkout interface built with React,
 TypeScript, Vite and Tailwind CSS. It reads UPI QR codes, walks through a
 payment flow, and keeps the resulting history on the device.
 
@@ -103,5 +103,5 @@ so it needs no network access.
 - History is per-browser and is lost when site data is cleared.
 - Camera scanning depends on browser permissions and a secure context.
 
-Paisa is an independent project and is not affiliated with any bank or UPI
+Curie is an independent project and is not affiliated with any bank or UPI
 application.

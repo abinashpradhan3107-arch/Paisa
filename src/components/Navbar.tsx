@@ -39,16 +39,12 @@ export function Navbar({
           <button
             type="button"
             onClick={() => onNavigate('home')}
-            className="flex h-11 items-center gap-0.5"
-            aria-label="Paisa home"
+            className="flex h-11 items-center select-none"
+            aria-label="Curie home"
           >
             <span className="font-display text-[27px] leading-none tracking-[-0.01em] text-ink">
-              paisa
+              curie
             </span>
-            <span
-              className="mb-1 h-1.5 w-1.5 rounded-full bg-accent"
-              aria-hidden="true"
-            />
           </button>
 
           <nav

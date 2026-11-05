@@ -1,5 +1,5 @@
 /**
- * Shared type definitions for the Paisa UPI checkout interface.
+ * Shared type definitions for the Curie UPI checkout interface.
  */
 
 /** Top-level navigation destinations. */
@@ -53,13 +53,13 @@ export interface Transaction {
   date: string
   /** Unix timestamp in milliseconds. */
   timestamp: number
-  /** Demo sender name shown in the "Paid from" block. */
+  /** Simulated sender name shown in the "Debited from" block. */
   senderName: string
-  /** Demo sender UPI ID. */
+  /** Simulated sender UPI ID. */
   senderUpiId: string
-  /** Demo sender bank. */
+  /** Simulated sender institution name. */
   senderBank: string
-  /** Masked demo sender account, e.g. "Savings •••• 4821". */
+  /** Masked simulated sender account, e.g. "Savings •••• 4821". */
   senderAccount: string
 }
 

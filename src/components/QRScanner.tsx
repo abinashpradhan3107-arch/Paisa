@@ -79,7 +79,7 @@ function cameraSupported(): boolean {
  */
 export function QRScanner({ onScan }: QRScannerProps) {
   const reactId = useId()
-  const elementId = `paisa-qr-${reactId.replace(/[^a-zA-Z0-9_-]/g, '')}`
+  const elementId = `curie-qr-${reactId.replace(/[^a-zA-Z0-9_-]/g, '')}`
   const scannerRef = useRef<Html5Qrcode | null>(null)
   const onScanRef = useRef(onScan)
   const lastInvalidRef = useRef<{ text: string; at: number } | null>(null)

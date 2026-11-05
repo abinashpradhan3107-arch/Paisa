@@ -5,6 +5,7 @@ import {
   Copy,
   Info,
   ReceiptText,
+  Wallet,
 } from 'lucide-react'
 import type { Transaction } from '../types'
 import { formatINR } from '../utils/upiParser'
@@ -123,7 +124,7 @@ function CopyButton({ value, label }: { value: string; label: string }) {
       className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-ink-faint transition hover:bg-paper-2 hover:text-ink"
     >
       {copied ? (
-        <Check className="h-3.5 w-3.5 text-emerald-400" strokeWidth={2.2} aria-hidden="true" />
+        <Check className="h-3.5 w-3.5 text-ink" strokeWidth={2.2} aria-hidden="true" />
       ) : (
         <Copy className="h-3.5 w-3.5" strokeWidth={1.7} aria-hidden="true" />
       )}
@@ -135,9 +136,9 @@ function CopyButton({ value, label }: { value: string; label: string }) {
  * Premium fintech transaction receipt card with:
  * - Paid to merchant info with avatar, masked UPI ID and amount
  * - Conditional Banking Name row
- * - Expandable Transfer Details with Demo reference, mode, date, time
- * - Debited from source account
- * - Persistent DEMO disclosure
+ * - Expandable Transfer Details with reference number, mode, date, time
+ * - Redesigned Debited From section with Simulated Account & Savings
+ * - Persistent SIMULATION disclosure
  */
 export function Receipt({
   transaction,
@@ -155,6 +156,25 @@ export function Receipt({
       !transaction.merchantName.includes('@'),
   )
 
+  // Debited from institution resolution:
+  // If not genuinely supplied by the user (or assigned a demo/real bank name), use "Simulated Account"
+  const isFabricatedBank =
+    !transaction.senderBank ||
+    transaction.senderBank === 'Demo Bank' ||
+    transaction.senderBank === 'State Bank of India' ||
+    transaction.senderBank === 'HDFC Bank' ||
+    transaction.senderBank === 'Axis Bank' ||
+    transaction.senderBank === 'Slice'
+
+  const institutionName = isFabricatedBank
+    ? 'Simulated Account'
+    : transaction.senderBank
+
+  // Preserve existing account number digits
+  const rawAccount = transaction.senderAccount || '•••• 4821'
+  const cleanMaskedNumber =
+    rawAccount.replace(/^Savings\s*[·•\-–—]*\s*/i, '').trim() || '•••• 4821'
+
   return (
     <div className={`space-y-3.5 text-left ${className}`}>
       {/* 1. Main Charcoal Card: Paid to + Banking Name + Transfer Details */}
@@ -167,7 +187,7 @@ export function Receipt({
         {/* Merchant Info Row */}
         <div className="mt-3 flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#1e201b] border border-line text-xs font-semibold text-ink-soft select-none">
+            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-paper-2 border border-line text-xs font-semibold text-ink-soft select-none">
               {initials(transaction.merchantName)}
             </div>
             <div className="min-w-0 flex-1">
@@ -234,16 +254,16 @@ export function Receipt({
           {/* Transfer Details Expandable Content */}
           {transferDetailsOpen && (
             <dl className="mt-3 divide-y divide-line/50 border-t border-line/50 text-xs">
-              {/* Demo Reference Number */}
+              {/* Reference Number */}
               <div className="flex items-center justify-between gap-4 py-2.5">
-                <dt className="shrink-0 text-ink-soft">Demo Reference Number</dt>
+                <dt className="shrink-0 text-ink-soft">Reference Number</dt>
                 <dd className="flex min-w-0 items-center justify-end gap-1.5 font-mono text-[11px] sm:text-xs text-ink">
                   <span className="break-all text-right">
-                    DEMO-{transaction.reference}
+                    {transaction.reference}
                   </span>
                   <CopyButton
-                    value={`DEMO-${transaction.reference}`}
-                    label="demo reference number"
+                    value={transaction.reference}
+                    label="reference number"
                   />
                 </dd>
               </div>
@@ -252,7 +272,7 @@ export function Receipt({
               <div className="flex items-center justify-between gap-4 py-2.5">
                 <dt className="shrink-0 text-ink-soft">Payment Mode</dt>
                 <dd className="text-right font-medium text-ink">
-                  UPI QR Simulation
+                  UPI QR
                 </dd>
               </div>
 
@@ -296,40 +316,37 @@ export function Receipt({
         </div>
       </section>
 
-      {/* 2. Paid / Debited From Card */}
-      {transaction.senderBank && (
-        <section className="rounded-2xl border border-line bg-card p-4 sm:p-5 shadow-sm">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-soft">
-            Debited from
-          </p>
-          <div className="mt-3 flex items-center justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#1e201b] border border-line text-xs font-semibold text-ink-soft select-none">
-                {initials(transaction.senderBank)}
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-ink">
-                  {transaction.senderBank}
-                </p>
-                <p className="truncate text-xs text-ink-soft">
-                  {transaction.senderAccount}
-                </p>
-              </div>
+      {/* 2. Debited From Section (Clean, consistent with merchant card) */}
+      <section className="rounded-2xl border border-line bg-card p-4 sm:p-5 shadow-sm">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-soft">
+          DEBITED FROM
+        </p>
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-paper-2 border border-line text-ink-soft select-none">
+              <Wallet className="h-4 w-4 text-ink-soft" strokeWidth={1.7} aria-hidden="true" />
             </div>
-            <div className="shrink-0 text-right">
-              <span className="font-mono text-sm font-medium text-ink-soft">
-                −{formatINR(transaction.amount)}
-              </span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-ink">
+                {institutionName}
+              </p>
+              <p className="truncate text-xs text-ink-soft">
+                Savings · {cleanMaskedNumber}
+              </p>
             </div>
           </div>
-        </section>
-      )}
+          <div className="shrink-0 text-right">
+            <span className="font-mono text-sm font-medium text-ink-soft">
+              −{formatINR(transaction.amount)}
+            </span>
+          </div>
+        </div>
+      </section>
 
-      {/* 3. Demo Disclosure Persistent Banner */}
+      {/* 3. Persistent Simulation Disclosure (No green dots, restrained styling) */}
       <div className="pt-2 text-center">
-        <div className="inline-flex items-center gap-2 rounded-full border border-line bg-card/60 px-3.5 py-1.5 text-[10px] sm:text-[11px] font-medium text-ink-faint">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500/80" />
-          <span>DEMO TRANSACTION · NO MONEY TRANSFERRED</span>
+        <div className="inline-flex items-center rounded-full border border-line bg-card/60 px-3.5 py-1.5 text-[10px] sm:text-[11px] font-medium tracking-wide text-ink-faint">
+          <span>SIMULATION · NO MONEY TRANSFERRED</span>
         </div>
       </div>
     </div>

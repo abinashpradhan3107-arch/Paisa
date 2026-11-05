@@ -123,8 +123,8 @@ export function HistoryPage({
 
             <div className="mt-3 flex items-center justify-between pb-3 border-b border-line/50">
               <div className="flex items-center gap-2.5">
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500 text-zinc-950">
-                  <Check className="h-4 w-4" strokeWidth={3} />
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#185c40] text-white border border-[#237553]/50">
+                  <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
                 </div>
                 <div>
                   <h2

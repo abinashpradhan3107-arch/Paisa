@@ -126,7 +126,7 @@ export function Home({
       </section>
 
       <p className="mt-10 text-[11px] leading-relaxed text-ink-faint">
-        Paisa keeps your payment history on this device.
+        Curie keeps your payment history on this device.
       </p>
     </div>
   )

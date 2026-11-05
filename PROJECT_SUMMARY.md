@@ -1,4 +1,4 @@
-# Paisa — UPI checkout
+# Curie — UPI checkout
 
 A small, mobile-first UPI checkout interface built with React, TypeScript, Vite
 and Tailwind CSS.
@@ -7,7 +7,7 @@ and Tailwind CSS.
 
 ## Core principle
 
-Paisa is a local prototype. It does not contact banks, payment gateways or the
+Curie is a local prototype. It does not contact banks, payment gateways or the
 UPI network, and it never creates a real payment. History lives only in the
 browser's LocalStorage.
 
