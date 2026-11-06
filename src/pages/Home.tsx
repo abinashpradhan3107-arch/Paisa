@@ -38,7 +38,7 @@ export function Home({
   const parsedAmount = parseAmount(amount)
 
   return (
-    <div className="animate-screen min-h-dvh px-5 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))]">
+    <div className="animate-screen min-h-dvh px-5 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-[calc(1.5rem+env(safe-area-inset-top))]">
       <header className="flex items-center justify-between">
         <span className="font-display text-[28px] leading-none tracking-[-0.01em] text-ink">
           curie
@@ -46,11 +46,7 @@ export function Home({
         <span className="sim-pill">Simulated</span>
       </header>
 
-      <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-faint">
-        Simulation · no money transferred
-      </p>
-
-      <div className="mt-5 flex items-center justify-between gap-4 rounded-2xl border border-line bg-card px-4 py-3">
+      <div className="mt-8 flex items-center justify-between gap-4 rounded-2xl border border-line bg-card px-4 py-3">
         <div className="min-w-0">
           <p className="label">Simulated balance</p>
           <p className="mt-1 truncate font-display text-[26px] leading-none tabular-nums text-ink">

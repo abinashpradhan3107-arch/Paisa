@@ -79,7 +79,7 @@ vercel
 ### ❌ Not Affected
 - No real financial transactions (already simulated locally)
 - No bank connections (none exist)
-- Simulation disclosure and disclaimers (always displayed)
+- Simulated badge and receipt disclaimers
 - Manual UPI ID entry
 - Payment confirmation animation
 - Transaction history (stored per session)
@@ -117,7 +117,7 @@ After deployment, verify:
 2. ✅ "Enter UPI ID manually" works (QR scanning limited on web)
 3. ✅ Payment simulation flow works
 4. ✅ History persists per session
-5. ✅ Simulation disclosure is visible on every screen
+5. ✅ Simulated badge and receipt disclosure are visible
 
 ## Repository
 

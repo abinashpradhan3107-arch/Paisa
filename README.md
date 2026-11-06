@@ -29,8 +29,9 @@ complete payment journey, and keeps simulated receipts on the device.
   time and status. Tap a row to open its receipt.
 - **Profile** — simulated wallet, success-sound preference, reset balance,
   clear history and app information.
-- **Persistent disclosure** — every screen carries
-  `SIMULATION · NO MONEY TRANSFERRED`.
+- **Simulation clarity** — a `Simulated` badge on the main screens, and a clear
+  `SIMULATION · NO MONEY TRANSFERRED` disclosure on the payment confirmation and
+  receipt.
 
 ## Design
 

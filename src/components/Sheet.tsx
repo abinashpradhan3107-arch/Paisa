@@ -56,9 +56,6 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
           </button>
         </div>
         <div className="mt-4">{children}</div>
-        <p className="mt-4 text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
-          Simulation · no money transferred
-        </p>
       </div>
     </div>
   )

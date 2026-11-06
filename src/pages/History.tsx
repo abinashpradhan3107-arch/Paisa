@@ -79,10 +79,6 @@ export function HistoryPage({ transactions, onOpen, onScan }: HistoryPageProps) 
           </section>
         ))
       )}
-
-      <div className="mt-8 flex justify-center">
-        <span className="sim-pill">Simulation · no money transferred</span>
-      </div>
     </div>
   )
 }

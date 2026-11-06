@@ -8,7 +8,7 @@ simulated payment journey.
 ## What works
 
 ### Home
-- Curie wordmark and a persistent `SIMULATION · NO MONEY TRANSFERRED` line.
+- Curie wordmark and a `Simulated` badge.
 - Simulated wallet balance (starts at ₹50,000).
 - Large amount readout with a decimal keypad, backspace and clear.
 - One prominent scan action, manual UPI ID entry and the three most recent
@@ -94,5 +94,6 @@ or manual UPI ID options.
 
 ## Core principle
 
-The app is a local simulator and never initiates a real payment. Every screen
-keeps a visible `SIMULATION · NO MONEY TRANSFERRED` disclosure.
+The app is a local simulator and never initiates a real payment. The main
+screens carry a `Simulated` badge, and the payment confirmation and receipt keep
+a clear `SIMULATION · NO MONEY TRANSFERRED` disclosure.

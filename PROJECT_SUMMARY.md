@@ -8,7 +8,8 @@ and Tailwind CSS.
 ## Core principle
 
 Curie is a local simulator. It does not contact banks, payment gateways or the
-UPI network, and it never creates a real payment. Every screen keeps a
+UPI network, and it never creates a real payment. The main screens carry a
+`Simulated` badge, while the payment confirmation and receipt keep a clear
 `SIMULATION · NO MONEY TRANSFERRED` disclosure. History, the simulated wallet
 balance and the sound preference live only in the browser's LocalStorage.
 

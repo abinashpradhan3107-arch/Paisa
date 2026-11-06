@@ -60,10 +60,6 @@ export function ProcessingAnimation({
         <div className="mx-auto mt-8 h-1 w-44 overflow-hidden rounded-full bg-line">
           <span className="block h-full w-1/3 animate-progress rounded-full bg-accent" />
         </div>
-
-        <p className="mt-6 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-faint">
-          Simulation · no money transferred
-        </p>
       </div>
     </div>
   )

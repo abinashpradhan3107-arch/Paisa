@@ -40,7 +40,7 @@ vercel --prod   # production deployment
 | Payment simulation flow | ✅ |
 | Transaction history (LocalStorage) | ✅ per session |
 | Dark-only theme | ✅ |
-| Simulation disclosure | ✅ |
+| Simulated badge & receipt disclosure | ✅ |
 | Confirmation screen | ✅ |
 | Navigation between pages | ✅ |
 
@@ -57,7 +57,7 @@ After deployment visits:
 2. "Enter UPI ID manually" works
 3. Payment simulation completes
 4. History stores per session
-5. The simulation disclosure is visible on every screen
+5. The Simulated badge and receipt disclosure are visible
 
 ## 🔗 Links
 

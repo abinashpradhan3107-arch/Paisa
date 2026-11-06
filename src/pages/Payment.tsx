@@ -182,10 +182,6 @@ export function PaymentPage({
         >
           {parsedAmount ? `Pay ${formatINR(parsedAmount)}` : 'Enter amount to pay'}
         </button>
-
-        <p className="mt-3 text-center text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-faint">
-          Simulation · no money transferred
-        </p>
       </div>
     </div>
   )

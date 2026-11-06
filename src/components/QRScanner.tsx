@@ -7,7 +7,6 @@ import {
   Keyboard,
   Loader2,
   RefreshCw,
-  ShieldCheck,
   X,
 } from 'lucide-react'
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode'
@@ -371,9 +370,6 @@ export function QRScanner({ onScan, onClose }: QRScannerProps) {
                 />
                 Try camera again
               </button>
-              <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
-                Simulation · no money transferred
-              </p>
             </div>
           </div>
         )}
@@ -383,9 +379,6 @@ export function QRScanner({ onScan, onClose }: QRScannerProps) {
           <div className="rounded-3xl border border-white/10 bg-black/55 p-4 backdrop-blur-xl">
             <p className="text-center text-sm font-medium text-white">
               Align the QR code inside the frame
-            </p>
-            <p className="mt-1 text-center text-[11px] text-white/55">
-              We only read standard UPI payment codes, on this device.
             </p>
 
             {inlineError && (
@@ -430,15 +423,6 @@ export function QRScanner({ onScan, onClose }: QRScannerProps) {
                 Enter UPI ID
               </button>
             </div>
-
-            <p className="mt-3 flex items-center justify-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/60">
-              <ShieldCheck
-                className="h-3 w-3"
-                strokeWidth={1.8}
-                aria-hidden="true"
-              />
-              Simulation · no money transferred
-            </p>
           </div>
         </div>
       </div>

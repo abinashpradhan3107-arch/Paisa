@@ -150,13 +150,6 @@ export function ProfilePage({
         </dl>
       </section>
 
-      <div className="mt-8 flex justify-center">
-        <span className="sim-pill">Simulation · no money transferred</span>
-      </div>
-      <p className="mt-3 text-center text-[10px] leading-relaxed text-ink-faint">
-        Curie never contacts a bank, a payment gateway or a UPI service.
-      </p>
-
       <Sheet
         open={confirm !== null}
         onClose={() => setConfirm(null)}
