@@ -1,4 +1,4 @@
-# PaySim Vercel Deployment - Complete
+# Curie Vercel Deployment
 
 ## ✅ Done
 
@@ -28,7 +28,7 @@ vercel --prod   # production deployment
 ### Option C: GitHub Integration
 
 1. Connect your GitHub account to Vercel
-2. Enable "Automatic Deployments" for the Paisa repo
+2. Enable "Automatic Deployments" for the Curie repository
 3. Every push to main branch auto-deploys
 
 ## 🎯 Verified on Vercel
@@ -39,8 +39,8 @@ vercel --prod   # production deployment
 | Manual UPI ID entry | ✅ (QR limited on web) |
 | Payment simulation flow | ✅ |
 | Transaction history (LocalStorage) | ✅ per session |
-| Dark/Light mode | ✅ |
-| DEMO indicator | ✅ |
+| Dark-only theme | ✅ |
+| Simulation disclosure | ✅ |
 | Confirmation screen | ✅ |
 | Navigation between pages | ✅ |
 
@@ -53,12 +53,11 @@ vercel --prod   # production deployment
 ## 📝 Post-Deployment Checklist
 
 After deployment visits:
-1. Home screen loads with PaySim logo
-2. "Enter UPI ID manually" field works
+1. Home screen loads with the Curie wordmark
+2. "Enter UPI ID manually" works
 3. Payment simulation completes
 4. History stores per session
-5. Toggle dark/light mode
-6. DEMO badge visible on all pages
+5. The simulation disclosure is visible on every screen
 
 ## 🔗 Links
 
@@ -66,4 +65,4 @@ After deployment visits:
 - **Vercel Deploy**: Your vercel project dashboard
 - **Local Development**: `npm run dev` → http://localhost:5173
 
-The PaySim UPI Payment Simulator is ready for Vercel deployment. The `vercel.json` configuration ensures automatic detection of the Vite/React framework.
+Curie, the UPI payment simulator, is ready for Vercel deployment. The `vercel.json` configuration ensures automatic detection of the Vite/React framework.

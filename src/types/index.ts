@@ -1,15 +1,32 @@
 /**
- * Shared type definitions for the Curie UPI checkout interface.
+ * Shared type definitions for the Curie UPI payment simulator.
  */
 
 /** Top-level navigation destinations. */
-export type Page = 'home' | 'scan' | 'history' | 'settings'
+export type Page = 'home' | 'history' | 'scan' | 'profile'
 
 /** Steps inside the payment flow. */
-export type PaymentStep = 'details' | 'processing' | 'success'
+export type PaymentStep = 'recipient' | 'processing' | 'success'
 
-/** Theme preference stored on the device. */
-export type ThemePreference = 'light' | 'dark' | 'system'
+/** Simulated funding sources available on the recipient screen. */
+export type FundingSourceId = 'wallet' | 'bank'
+
+/** A simulated account the payment can be funded from. */
+export interface FundingSource {
+  id: FundingSourceId
+  /** Display name, e.g. "Curie Wallet". */
+  name: string
+  /** Short supporting line, e.g. "Simulated balance". */
+  description: string
+  /** Account type shown on the receipt. */
+  accountType: string
+  /** Masked simulated account number. */
+  maskedAccount: string
+  /** Simulated sender VPA. */
+  upiId: string
+  /** Simulated institution name. */
+  bankName: string
+}
 
 /** A UPI payload parsed from a QR code or entered manually. */
 export interface UpiPayload {
@@ -32,17 +49,19 @@ export interface PaymentDetails {
   merchantName: string
   payeeUpiId: string
   amount: number
+  note?: string
+  fundingSource: FundingSourceId
 }
 
-/** A locally stored payment record. */
+/** A locally stored simulated payment record. */
 export interface Transaction {
-  /** Unique id, also used as the reference. */
+  /** Unique id. */
   id: string
-  /** 12-digit UPI-style reference (shown as the UTR). */
+  /** 12-digit simulated reference number shown on the receipt. */
   reference: string
-  /** 14-character alphanumeric transaction id shown on the receipt. */
+  /** 14-character alphanumeric simulated transaction id. */
   transactionId: string
-  /** 10-digit numeric Reference Retrieval Number (RRN). */
+  /** 10-digit simulated reference retrieval number. */
   rrn: string
   merchantName: string
   payeeUpiId: string
@@ -53,13 +72,19 @@ export interface Transaction {
   date: string
   /** Unix timestamp in milliseconds. */
   timestamp: number
+  /** Optional note added by the payer. */
+  note?: string
+  /** Which simulated source funded the payment. */
+  fundingSource: FundingSourceId
   /** Simulated sender name shown in the "Debited from" block. */
   senderName: string
   /** Simulated sender UPI ID. */
   senderUpiId: string
-  /** Simulated sender institution name. */
+  /** Simulated institution name. */
   senderBank: string
-  /** Masked simulated sender account, e.g. "Savings •••• 4821". */
+  /** Account type, e.g. "Wallet" or "Savings". */
+  senderAccountType: string
+  /** Masked simulated sender account, e.g. "•••• 4821". */
   senderAccount: string
 }
 

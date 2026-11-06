@@ -1,16 +1,12 @@
-import { useState } from 'react'
-import { ArrowUpRight, Check, X } from 'lucide-react'
+import { ScanLine } from 'lucide-react'
 import type { Transaction } from '../types'
-import { formatINR } from '../utils/upiParser'
 import { formatMonthLabel } from '../utils/storage'
-import { Receipt } from '../components/Receipt'
 import { TransactionItem } from '../components/TransactionItem'
 
 interface HistoryPageProps {
   transactions: Transaction[]
+  onOpen: (transaction: Transaction) => void
   onScan: () => void
-  onRemove: (id: string) => void
-  onClear: () => void
 }
 
 function groupByMonth(
@@ -29,182 +25,64 @@ function groupByMonth(
   return groups
 }
 
-/** Full payment history, grouped by month. */
-export function HistoryPage({
-  transactions,
-  onScan,
-  onRemove,
-  onClear,
-}: HistoryPageProps) {
-  const [confirmClear, setConfirmClear] = useState(false)
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const selected =
-    selectedId === null
-      ? null
-      : transactions.find((transaction) => transaction.id === selectedId) ?? null
-  const total = transactions.reduce((sum, item) => sum + item.amount, 0)
+/** Locally stored simulated payments, grouped by month. */
+export function HistoryPage({ transactions, onOpen, onScan }: HistoryPageProps) {
   const groups = groupByMonth(transactions)
 
   return (
-    <div className="px-5 pb-28 pt-6 md:pb-10">
-      <header className="flex items-end justify-between gap-4">
-        <div>
-          <p className="label">Activity</p>
-          <h1 className="mt-1 font-display text-[40px] leading-none tracking-[-0.01em] text-ink">
-            History
-          </h1>
-        </div>
-        {transactions.length > 0 && (
-          <button
-            type="button"
-            onClick={() => setConfirmClear(true)}
-            className="pb-1 text-xs text-ink-soft underline decoration-line underline-offset-4 transition hover:text-danger"
-          >
-            Clear
-          </button>
-        )}
+    <div className="animate-screen min-h-dvh px-5 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-[calc(1.25rem+env(safe-area-inset-top))]">
+      <header>
+        <h1 className="font-display text-[42px] leading-none tracking-[-0.01em] text-ink">
+          History
+        </h1>
+        <p className="mt-2 text-sm text-ink-soft">
+          {transactions.length > 0
+            ? `${transactions.length} simulated ${
+                transactions.length === 1 ? 'payment' : 'payments'
+              } on this device.`
+            : 'Simulated payments on this device.'}
+        </p>
       </header>
 
-      <p className="mt-3 text-sm text-ink-soft">
-        {transactions.length === 0
-          ? 'No payments yet.'
-          : `${transactions.length} payment${
-              transactions.length === 1 ? '' : 's'
-            } · ${formatINR(total)}`}
-      </p>
-
       {transactions.length === 0 ? (
-        <div className="mt-10 border-t border-line pt-8">
-          <p className="max-w-xs text-sm leading-relaxed text-ink-soft">
-            Payments you make will show up here, on this device.
+        <div className="card mt-8 flex flex-col items-center px-6 py-10 text-center">
+          <span className="grid h-14 w-14 place-items-center rounded-full bg-card-2 text-ink-soft">
+            <ScanLine className="h-6 w-6" strokeWidth={1.6} aria-hidden="true" />
+          </span>
+          <p className="mt-4 text-sm font-semibold text-ink">No payments yet</p>
+          <p className="mt-1.5 max-w-[240px] text-xs leading-relaxed text-ink-soft">
+            Scan a UPI QR code to try the full simulated payment journey.
           </p>
-          <button
-            type="button"
-            onClick={onScan}
-            className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-ink underline decoration-line underline-offset-4 transition hover:decoration-ink"
-          >
+          <button type="button" onClick={onScan} className="btn-primary mt-5 h-12 px-6">
+            <ScanLine className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
             Scan a QR code
-            <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
           </button>
         </div>
       ) : (
-        <div className="mt-8 space-y-8">
-          {groups.map((group) => (
-            <section key={group.label}>
+        groups.map((group) => (
+          <section key={group.label} className="mt-7">
+            <div className="flex items-baseline justify-between gap-4">
               <h2 className="label">{group.label}</h2>
-              <ul className="mt-1 divide-y divide-line">
-                {group.items.map((transaction) => (
-                  <TransactionItem
-                    key={transaction.id}
-                    transaction={transaction}
-                    onRemove={onRemove}
-                    onOpen={setSelectedId}
-                  />
-                ))}
-              </ul>
-            </section>
-          ))}
-        </div>
-      )}
-
-      {selected && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="receipt-title"
-          onClick={() => setSelectedId(null)}
-        >
-          <div
-            className="max-h-[90dvh] w-full max-w-[520px] animate-sheet overflow-y-auto rounded-t-2xl bg-paper px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="mx-auto h-1 w-9 rounded-full bg-line" />
-
-            <div className="mt-3 flex items-center justify-between pb-3 border-b border-line/50">
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#185c40] text-white border border-[#237553]/50">
-                  <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
-                </div>
-                <div>
-                  <h2
-                    id="receipt-title"
-                    className="text-sm sm:text-base font-semibold text-ink leading-tight"
-                  >
-                    Transaction Details
-                  </h2>
-                  <p className="text-[11px] text-ink-soft">{selected.date}</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedId(null)}
-                className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-line text-ink-soft transition hover:bg-paper-2 hover:text-ink"
-                aria-label="Close receipt"
-              >
-                <X className="h-4 w-4" strokeWidth={1.7} aria-hidden="true" />
-              </button>
+              <span className="text-[11px] text-ink-faint">
+                {group.items.length}
+              </span>
             </div>
-
-            <Receipt transaction={selected} className="mt-5" />
-
-            <button
-              type="button"
-              onClick={() => setSelectedId(null)}
-              className="btn-primary mt-5 w-full"
-            >
-              Done
-            </button>
-          </div>
-        </div>
+            <ul className="mt-1 divide-y divide-line/60">
+              {group.items.map((transaction) => (
+                <TransactionItem
+                  key={transaction.id}
+                  transaction={transaction}
+                  onOpen={onOpen}
+                />
+              ))}
+            </ul>
+          </section>
+        ))
       )}
 
-      {confirmClear && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="clear-history-title"
-          onClick={() => setConfirmClear(false)}
-        >
-          <div
-            className="w-full max-w-[520px] animate-sheet rounded-t-2xl bg-paper px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="mx-auto h-1 w-9 rounded-full bg-line" />
-            <h2
-              id="clear-history-title"
-              className="mt-4 font-display text-2xl text-ink"
-            >
-              Clear history?
-            </h2>
-            <p className="mt-1 text-sm leading-relaxed text-ink-soft">
-              This removes all {transactions.length} payment
-              {transactions.length === 1 ? '' : 's'} from this device. It cannot
-              be undone.
-            </p>
-            <div className="mt-5 flex gap-2">
-              <button
-                type="button"
-                onClick={() => setConfirmClear(false)}
-                className="btn-quiet flex-1"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  onClear()
-                  setConfirmClear(false)
-                }}
-                className="flex-1 rounded-xl bg-danger px-5 py-3.5 text-sm font-semibold text-paper transition hover:opacity-90"
-              >
-                Clear all
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <div className="mt-8 flex justify-center">
+        <span className="sim-pill">Simulation · no money transferred</span>
+      </div>
     </div>
   )
 }

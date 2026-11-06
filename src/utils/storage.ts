@@ -1,11 +1,11 @@
-import type { ThemePreference, Transaction } from '../types'
+import type { FundingSourceId, Transaction } from '../types'
+import { DEFAULT_BALANCE, getFundingSource, MAX_AMOUNT } from './funding'
 
 const HISTORY_KEY = 'curie.history.v1'
 const LEGACY_HISTORY_KEY = 'paisa.history.v1'
-const THEME_KEY = 'curie.theme.v1'
-const LEGACY_THEME_KEY = 'paisa.theme.v1'
 const SOUND_KEY = 'curie.sound.v1'
 const LEGACY_SOUND_KEY = 'paisa.sound.v1'
+const BALANCE_KEY = 'curie.balance.v1'
 const HISTORY_LIMIT = 200
 
 function getStorage(): Storage | null {
@@ -18,18 +18,6 @@ function getStorage(): Storage | null {
     return null
   }
 }
-
-/**
- * The simulated sender shown on receipts.
- */
-export const SIMULATED_SENDER = {
-  name: 'Account Holder',
-  upiId: 'user@curie',
-  bank: 'Simulated Account',
-  account: '•••• 4821',
-} as const
-
-export const DEMO_SENDER = SIMULATED_SENDER
 
 const ALPHANUMERIC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 const TRANSACTION_ID_PATTERN = /^[A-Za-z0-9]{14}$/
@@ -78,22 +66,26 @@ type StoredTransaction = Omit<
   Transaction,
   | 'transactionId'
   | 'rrn'
+  | 'currency'
+  | 'fundingSource'
   | 'senderName'
   | 'senderUpiId'
   | 'senderBank'
+  | 'senderAccountType'
   | 'senderAccount'
-  | 'currency'
 > &
   Partial<
     Pick<
       Transaction,
       | 'transactionId'
       | 'rrn'
+      | 'currency'
+      | 'fundingSource'
       | 'senderName'
       | 'senderUpiId'
       | 'senderBank'
+      | 'senderAccountType'
       | 'senderAccount'
-      | 'currency'
     >
   >
 
@@ -115,6 +107,9 @@ function isTransaction(value: unknown): value is StoredTransaction {
 function normalizeTransaction(record: StoredTransaction): Transaction {
   const seed = `${record.id}:${record.timestamp}`
   const next = seededRandom(hashString(seed))
+  const fundingSource: FundingSourceId =
+    record.fundingSource === 'wallet' ? 'wallet' : 'bank'
+  const source = getFundingSource(fundingSource)
 
   return {
     ...record,
@@ -127,13 +122,12 @@ function normalizeTransaction(record: StoredTransaction): Transaction {
       record.rrn && RRN_PATTERN.test(record.rrn)
         ? record.rrn
         : randomRrn(seededRandom(hashString(`${seed}:rrn`))),
-    senderName: record.senderName ?? SIMULATED_SENDER.name,
-    senderUpiId: record.senderUpiId ?? SIMULATED_SENDER.upiId,
-    senderBank:
-      record.senderBank && record.senderBank !== 'Demo Bank'
-        ? record.senderBank
-        : SIMULATED_SENDER.bank,
-    senderAccount: record.senderAccount ?? SIMULATED_SENDER.account,
+    fundingSource,
+    senderName: record.senderName ?? 'Account Holder',
+    senderUpiId: record.senderUpiId ?? source.upiId,
+    senderBank: record.senderBank ?? source.bankName,
+    senderAccountType: record.senderAccountType ?? source.accountType,
+    senderAccount: record.senderAccount ?? source.maskedAccount,
   }
 }
 
@@ -163,7 +157,8 @@ export function loadTransactions(): Transaction[] {
 export function addTransaction(transaction: Transaction): Transaction[] {
   const updated = [transaction, ...loadTransactions()]
     .filter(
-      (item, index, all) => all.findIndex((other) => other.id === item.id) === index,
+      (item, index, all) =>
+        all.findIndex((other) => other.id === item.id) === index,
     )
     .slice(0, HISTORY_LIMIT)
 
@@ -183,18 +178,19 @@ export function clearTransactions(): void {
   getStorage()?.removeItem(HISTORY_KEY)
 }
 
-/** Reads the saved theme preference. */
-export function loadTheme(): ThemePreference {
-  const saved =
-    getStorage()?.getItem(THEME_KEY) ?? getStorage()?.getItem(LEGACY_THEME_KEY)
-  return saved === 'light' || saved === 'dark' || saved === 'system'
-    ? saved
-    : 'system'
+/** Reads the simulated wallet balance. */
+export function loadBalance(): number {
+  const raw = getStorage()?.getItem(BALANCE_KEY)
+  if (raw === null || raw === undefined) return DEFAULT_BALANCE
+  const value = Number(raw)
+  if (!Number.isFinite(value) || value < 0) return DEFAULT_BALANCE
+  return Math.min(value, MAX_AMOUNT)
 }
 
-/** Persists the theme preference. */
-export function saveTheme(theme: ThemePreference): void {
-  getStorage()?.setItem(THEME_KEY, theme)
+/** Persists the simulated wallet balance. */
+export function saveBalance(balance: number): void {
+  const safe = Math.max(0, Math.min(balance, MAX_AMOUNT))
+  getStorage()?.setItem(BALANCE_KEY, String(Math.round(safe * 100) / 100))
 }
 
 /** Reads the success-sound preference (on by default). */
@@ -209,7 +205,7 @@ export function saveSoundEnabled(enabled: boolean): void {
   getStorage()?.setItem(SOUND_KEY, enabled ? 'on' : 'off')
 }
 
-/** Generates a 12-digit UPI-style reference (the UTR on the receipt). */
+/** Generates a 12-digit simulated reference number. */
 export function generateReference(): string {
   const stamp = Date.now().toString().slice(-9)
   const random = Math.floor(Math.random() * 1000)
@@ -222,13 +218,15 @@ interface CreateTransactionInput {
   merchantName: string
   payeeUpiId: string
   amount: number
+  fundingSource: FundingSourceId
+  note?: string
   /** Defaults to now. */
   timestamp?: number
 }
 
 /**
- * Builds a complete, demo-safe payment record with the identifiers a real UPI
- * receipt shows: a 14-character transaction id, a 10-digit RRN and a UTR.
+ * Builds a complete, clearly simulated payment record. The identifiers are
+ * local placeholders, not real bank references.
  */
 export function createTransaction(input: CreateTransactionInput): Transaction {
   const timestamp = input.timestamp ?? Date.now()
@@ -237,6 +235,7 @@ export function createTransaction(input: CreateTransactionInput): Transaction {
     typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
       ? crypto.randomUUID()
       : `txn_${timestamp}_${Math.random().toString(36).slice(2, 10)}`
+  const source = getFundingSource(input.fundingSource)
 
   return {
     id,
@@ -249,10 +248,13 @@ export function createTransaction(input: CreateTransactionInput): Transaction {
     currency: 'INR',
     date: formatTimestamp(timestamp),
     timestamp,
-    senderName: SIMULATED_SENDER.name,
-    senderUpiId: SIMULATED_SENDER.upiId,
-    senderBank: SIMULATED_SENDER.bank,
-    senderAccount: SIMULATED_SENDER.account,
+    note: input.note,
+    fundingSource: input.fundingSource,
+    senderName: 'Account Holder',
+    senderUpiId: source.upiId,
+    senderBank: source.bankName,
+    senderAccountType: source.accountType,
+    senderAccount: source.maskedAccount,
   }
 }
 
@@ -274,6 +276,24 @@ export function formatShortDate(timestamp: number): string {
     month: 'short',
     hour: '2-digit',
     minute: '2-digit',
+  })
+}
+
+/** Full date for receipt rows. */
+export function formatDate(timestamp: number): string {
+  return new Date(timestamp).toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
+/** Time for receipt rows. */
+export function formatTime(timestamp: number): string {
+  return new Date(timestamp).toLocaleTimeString('en-IN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
   })
 }
 

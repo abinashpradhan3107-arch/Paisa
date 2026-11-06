@@ -86,10 +86,9 @@ export function buildManualPayload(upiId: string): UpiPayload {
   if (!isValidUpiId(payeeUpiId)) {
     throw new Error('Enter a valid UPI ID, for example merchant@upi.')
   }
-  const handle = payeeUpiId.split('@')[0]
   return {
     payeeUpiId,
-    merchantName: handle.replace(/[._-]+/g, ' ').trim() || payeeUpiId,
+    merchantName: merchantNameFromUpiId(payeeUpiId),
     amount: null,
     currency: 'INR',
     rawPayload: `upi://pay?pa=${encodeURIComponent(payeeUpiId)}`,

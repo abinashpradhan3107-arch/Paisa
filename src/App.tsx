@@ -1,17 +1,17 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { Loader2 } from 'lucide-react'
-import { Navbar } from './components/Navbar'
+import { BottomNav } from './components/BottomNav'
 import { ProcessingAnimation } from './components/ProcessingAnimation'
-import { SuccessAnimation } from './components/SuccessAnimation'
+import { SuccessScreen } from './components/SuccessScreen'
+import { TransactionDetails } from './components/TransactionDetails'
 import { HistoryPage } from './pages/History'
 import { Home } from './pages/Home'
 import { PaymentPage } from './pages/Payment'
-import { SettingsPage } from './pages/Settings'
+import { ProfilePage } from './pages/Profile'
 import type {
   Page,
   PaymentDetails,
   PaymentStep,
-  ThemePreference,
   Transaction,
   UpiPayload,
 } from './types'
@@ -19,19 +19,21 @@ import {
   addTransaction,
   clearTransactions,
   createTransaction,
+  loadBalance,
   loadSoundEnabled,
-  loadTheme,
   loadTransactions,
   removeTransaction,
+  saveBalance,
   saveSoundEnabled,
-  saveTheme,
 } from './utils/storage'
+import { DEFAULT_BALANCE } from './utils/funding'
+import { parseAmount } from './utils/amount'
 import {
   primeSuccessSound,
   setSoundEnabled as applySoundEnabled,
 } from './utils/sound'
 
-const PROCESSING_DELAY_MS = 1600
+const PROCESSING_DELAY_MS = 2000
 
 /* The scanner pulls in html5-qrcode; load it only when the user needs it. */
 const ScannerPage = lazy(() =>
@@ -40,7 +42,7 @@ const ScannerPage = lazy(() =>
 
 function PageLoader() {
   return (
-    <div className="grid min-h-[50vh] place-items-center">
+    <div className="grid min-h-dvh place-items-center">
       <Loader2
         className="h-6 w-6 animate-spin text-ink-faint"
         aria-label="Loading"
@@ -50,7 +52,7 @@ function PageLoader() {
 }
 
 /**
- * Root component. Owns navigation, the theme preference, payment history and
+ * Root component. Owns navigation, the simulated balance, payment history and
  * the payment state machine so every screen shares one source of truth.
  */
 function App() {
@@ -59,30 +61,13 @@ function App() {
   const [payload, setPayload] = useState<UpiPayload | null>(null)
   const [payment, setPayment] = useState<PaymentDetails | null>(null)
   const [transaction, setTransaction] = useState<Transaction | null>(null)
+  const [detail, setDetail] = useState<Transaction | null>(null)
   const [transactions, setTransactions] = useState<Transaction[]>(() =>
     loadTransactions(),
   )
-  const [theme, setTheme] = useState<ThemePreference>(() => loadTheme())
+  const [balance, setBalance] = useState(() => loadBalance())
+  const [draftAmount, setDraftAmount] = useState('')
   const [soundEnabled, setSoundEnabled] = useState(() => loadSoundEnabled())
-  const [systemDark, setSystemDark] = useState(
-    () => window.matchMedia('(prefers-color-scheme: dark)').matches,
-  )
-
-  /* Track the OS theme so "system" stays live. */
-  useEffect(() => {
-    const media = window.matchMedia('(prefers-color-scheme: dark)')
-    const onChange = (event: MediaQueryListEvent) => setSystemDark(event.matches)
-    media.addEventListener('change', onChange)
-    return () => media.removeEventListener('change', onChange)
-  }, [])
-
-  const isDark = theme === 'dark' || (theme === 'system' && systemDark)
-
-  useEffect(() => {
-    const root = document.documentElement
-    root.classList.toggle('dark', isDark)
-    root.style.colorScheme = isDark ? 'dark' : 'light'
-  }, [isDark])
 
   /* Keep the audio module in sync with the saved preference. */
   useEffect(() => {
@@ -91,10 +76,20 @@ function App() {
 
   /* Keep the viewport at the top when the screen changes. */
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    window.scrollTo({ top: 0 })
   }, [page, step])
 
-  /* Advance the payment exactly once per checkout. */
+  /* Lock the page behind the receipt overlay. */
+  useEffect(() => {
+    if (!detail) return
+    const previous = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previous
+    }
+  }, [detail])
+
+  /* Advance the simulation exactly once per checkout. */
   useEffect(() => {
     if (step !== 'processing' || !payment) return
 
@@ -103,70 +98,82 @@ function App() {
         merchantName: payment.merchantName,
         payeeUpiId: payment.payeeUpiId,
         amount: payment.amount,
+        fundingSource: payment.fundingSource,
+        note: payment.note,
       })
 
       setTransaction(record)
       setTransactions(addTransaction(record))
+
+      if (payment.fundingSource === 'wallet') {
+        setBalance((current) => {
+          const next =
+            Math.round(Math.max(0, current - payment.amount) * 100) / 100
+          saveBalance(next)
+          return next
+        })
+      }
+
+      setDraftAmount('')
       setStep('success')
     }, PROCESSING_DELAY_MS)
 
     return () => window.clearTimeout(timer)
   }, [step, payment])
 
-  const handleNavigate = (nextPage: Page) => {
-    setPage(nextPage)
+  const resetFlow = () => {
     setStep(null)
     setPayload(null)
     setPayment(null)
     setTransaction(null)
+    setDetail(null)
+  }
+
+  const handleNavigate = (nextPage: Page) => {
+    resetFlow()
+    setPage(nextPage)
   }
 
   const handleStartPayment = (nextPayload: UpiPayload) => {
+    setDetail(null)
     setPayload(nextPayload)
     setPayment(null)
     setTransaction(null)
-    setStep('details')
+    setStep('recipient')
+    setPage('home')
   }
 
-  const handlePay = (amount: number) => {
-    if (!payload) return
+  const handlePay = (details: PaymentDetails) => {
     /* Prime the chime while we still have the tap gesture. */
     primeSuccessSound()
-    setPayment({
-      merchantName: payload.merchantName,
-      payeeUpiId: payload.payeeUpiId,
-      amount,
-    })
+    setPayment(details)
     setStep('processing')
   }
 
   const handleCancelPayment = () => {
-    setStep(null)
-    setPayload(null)
-    setPayment(null)
-    setTransaction(null)
+    resetFlow()
     setPage('home')
   }
 
-  const handleNewPayment = () => {
-    setStep(null)
-    setPayload(null)
-    setPayment(null)
-    setTransaction(null)
+  const handleDone = () => {
+    resetFlow()
+    setDraftAmount('')
     setPage('home')
   }
 
-  const handleViewHistory = () => {
-    setStep(null)
-    setPayload(null)
-    setPayment(null)
-    setTransaction(null)
+  const handleViewDetails = () => {
+    if (!transaction) return
+    setDetail(transaction)
+  }
+
+  const handleOpenTransaction = (nextTransaction: Transaction) => {
+    setDetail(nextTransaction)
+  }
+
+  const handleDeleted = (id: string) => {
+    setTransactions(removeTransaction(id))
+    resetFlow()
     setPage('history')
-  }
-
-  const handleThemeChange = (nextTheme: ThemePreference) => {
-    setTheme(nextTheme)
-    saveTheme(nextTheme)
   }
 
   const handleSoundChange = (enabled: boolean) => {
@@ -174,92 +181,97 @@ function App() {
     saveSoundEnabled(enabled)
   }
 
-  const handleToggleTheme = () => {
-    handleThemeChange(isDark ? 'light' : 'dark')
-  }
-
-  const handleRemoveTransaction = (id: string) => {
-    setTransactions(removeTransaction(id))
-  }
-
   const handleClearHistory = () => {
     clearTransactions()
     setTransactions([])
+    if (detail) setDetail(null)
   }
 
-  const inPaymentFlow = step !== null
+  const handleResetBalance = () => {
+    setBalance(DEFAULT_BALANCE)
+    saveBalance(DEFAULT_BALANCE)
+  }
+
+  const initialAmount = payload
+    ? payload.amount ?? parseAmount(draftAmount)
+    : null
+
+  const showScanner = step === null && page === 'scan'
+  const showNav = step === null && page !== 'scan'
 
   return (
-    <div className="mx-auto min-h-dvh w-full max-w-[520px] bg-paper md:border-x md:border-line">
-      {!inPaymentFlow && (
-        <Navbar
-          currentPage={page}
-          onNavigate={handleNavigate}
-          isDark={isDark}
-          onToggleTheme={handleToggleTheme}
-        />
+    <div className="mx-auto min-h-dvh w-full max-w-[480px] bg-paper md:border-x md:border-line">
+      <Suspense fallback={<PageLoader />}>
+        {step === 'recipient' && payload ? (
+          <PaymentPage
+            payload={payload}
+            initialAmount={initialAmount}
+            balance={balance}
+            onBack={handleCancelPayment}
+            onPay={handlePay}
+          />
+        ) : step === 'processing' && payment ? (
+          <ProcessingAnimation
+            merchantName={payment.merchantName}
+            amount={payment.amount}
+            fundingSource={payment.fundingSource}
+          />
+        ) : step === 'success' && transaction ? (
+          <SuccessScreen
+            transaction={transaction}
+            soundEnabled={soundEnabled}
+            onViewDetails={handleViewDetails}
+            onDone={handleDone}
+          />
+        ) : showScanner ? (
+          <ScannerPage
+            onScan={handleStartPayment}
+            onClose={() => setPage('home')}
+          />
+        ) : page === 'home' ? (
+          <Home
+            transactions={transactions}
+            balance={balance}
+            amount={draftAmount}
+            onAmountChange={setDraftAmount}
+            onScan={() => handleNavigate('scan')}
+            onStartPayment={handleStartPayment}
+            onOpenTransaction={handleOpenTransaction}
+            onViewHistory={() => handleNavigate('history')}
+          />
+        ) : page === 'history' ? (
+          <HistoryPage
+            transactions={transactions}
+            onOpen={handleOpenTransaction}
+            onScan={() => handleNavigate('scan')}
+          />
+        ) : (
+          <ProfilePage
+            balance={balance}
+            soundEnabled={soundEnabled}
+            onSoundChange={handleSoundChange}
+            transactionCount={transactions.length}
+            onClearHistory={handleClearHistory}
+            onResetBalance={handleResetBalance}
+          />
+        )}
+      </Suspense>
+
+      {showNav && (
+        <BottomNav currentPage={page} onNavigate={handleNavigate} />
       )}
 
-      <main>
-        <Suspense fallback={<PageLoader />}>
-          {step === 'details' && payload && (
-            <PaymentPage
-              payload={payload}
-              onBack={handleCancelPayment}
-              onPay={handlePay}
+      {detail && (
+        <div className="fixed inset-0 z-[60] overflow-y-auto overscroll-contain bg-paper">
+          <div className="mx-auto min-h-dvh w-full max-w-[480px] bg-paper md:border-x md:border-line">
+            <TransactionDetails
+              transaction={detail}
+              onBack={() => setDetail(null)}
+              onDeleted={handleDeleted}
             />
-          )}
-
-          {step === 'processing' && payment && (
-            <ProcessingAnimation
-              merchantName={payment.merchantName}
-              amount={payment.amount}
-            />
-          )}
-
-          {step === 'success' && transaction && (
-            <SuccessAnimation
-              transaction={transaction}
-              onNewPayment={handleNewPayment}
-              onViewHistory={handleViewHistory}
-              soundEnabled={soundEnabled}
-            />
-          )}
-
-          {!inPaymentFlow && page === 'home' && (
-            <Home
-              transactions={transactions}
-              onScan={() => handleNavigate('scan')}
-              onStartPayment={handleStartPayment}
-              onViewHistory={() => handleNavigate('history')}
-            />
-          )}
-
-          {!inPaymentFlow && page === 'scan' && (
-            <ScannerPage onScan={handleStartPayment} />
-          )}
-
-          {!inPaymentFlow && page === 'history' && (
-            <HistoryPage
-              transactions={transactions}
-              onScan={() => handleNavigate('scan')}
-              onRemove={handleRemoveTransaction}
-              onClear={handleClearHistory}
-            />
-          )}
-
-          {!inPaymentFlow && page === 'settings' && (
-            <SettingsPage
-              theme={theme}
-              onThemeChange={handleThemeChange}
-              soundEnabled={soundEnabled}
-              onSoundChange={handleSoundChange}
-              transactionCount={transactions.length}
-              onClearHistory={handleClearHistory}
-            />
-          )}
-        </Suspense>
-      </main>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

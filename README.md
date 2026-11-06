@@ -1,40 +1,46 @@
-# Curie — UPI checkout
+# Curie — UPI payment simulator
 
-Curie is a small, local-first UPI checkout interface built with React,
-TypeScript, Vite and Tailwind CSS. It reads UPI QR codes, walks through a
-payment flow, and keeps the resulting history on the device.
+Curie is a dark, mobile-first UPI payment **simulator** built with React,
+TypeScript, Vite and Tailwind CSS. It scans UPI QR codes, walks through a
+complete payment journey, and keeps simulated receipts on the device.
 
-The interface is a prototype. It runs entirely in the browser, makes no network
-requests, and is not connected to a bank, a payment gateway, or the UPI network.
+> **Simulation only.** Curie never contacts a bank, a payment gateway or the UPI
+> network. No money moves, and no real payment intent is ever created.
 
 ## Features
 
-- **Pay** — one primary scan action, manual UPI ID entry, and recent activity.
-- **Scan** — camera scanning via `html5-qrcode`, image-upload fallback, and
-  clear permission / no-camera states.
-- **Payment** — payee summary, QR amount prefill, a large decimal keypad, quick
-  amounts and a ₹1,00,000 cap.
-- **Success** — a full-screen green panel wipes down, draws a white check with a
-  soft halo, then lifts to reveal the receipt. A two-note chime plays alongside
-  it, with light haptics where supported.
-- **Confirmation** — a quiet receipt-style screen with the amount, payee, UPI
-  ID, timestamp and a 12-digit reference.
-- **Activity** — month-grouped history with totals, per-item delete and a
-  bottom-sheet clear confirmation.
-- **Settings** — light / dark / system theme, success-sound toggle, local data
-  controls and app info.
+- **Home** — Curie wordmark, a simulated ₹50,000 wallet balance, a large
+  amount readout, a decimal keypad with backspace and clear, and one prominent
+  scan action.
+- **Scanner** — live camera scanning via `html5-qrcode`, an animated scan
+  frame, gallery upload, manual UPI ID entry, close control, and graceful
+  permission-denied / no-camera states. Valid UPI QR codes auto-advance.
+- **Recipient** — avatar, merchant name, UPI ID, editable amount with keypad,
+  optional note, and a simulated funding source (Curie Wallet or a simulated
+  bank account). QR preset amounts and notes are prefilled.
+- **Processing** — an animated indicator with the recipient and amount for
+  about two seconds.
+- **Success** — drawn checkmark, "Payment completed", amount, recipient,
+  date/time, reference, View details, Share and Done.
+- **Receipt details** — Curie branding, status, date/time, paid-to,
+  debited-from, expandable transfer details (reference, RRN, transaction ID,
+  payment mode), share/download and delete.
+- **History** — month-grouped simulated payments with recipient, amount, date,
+  time and status. Tap a row to open its receipt.
+- **Profile** — simulated wallet, success-sound preference, reset balance,
+  clear history and app information.
+- **Persistent disclosure** — every screen carries
+  `SIMULATION · NO MONEY TRANSFERRED`.
 
 ## Design
 
-- Mobile-first: a single centred column, capped at 520px, with a bottom tab bar
-  on phones and a slim top bar on larger screens.
-- Warm paper, ink and deep green palette; Instrument Sans for UI text and
-  Instrument Serif for display numbers and headings.
-- Hairline dividers instead of stacked cards, flat controls, and restrained
-  motion. Dark mode is a first-class variant, not an afterthought.
-- The success panel uses the same deep green as the accent, a hand-drawn check,
-  and a short chime. Both respect `prefers-reduced-motion` and the sound
-  preference; tapping the panel skips straight to the receipt.
+- Dark-only palette: near-black paper, soft card surfaces, lime accent, mint
+  success and coral danger.
+- Instrument Sans for interface text and Instrument Serif for the wordmark,
+  balances and large amounts.
+- A single centred column capped at `480px`, with a fixed bottom navigation and
+  an elevated lime Scan action.
+- Restrained motion, 44px tap targets, and layout that fits 360px-wide phones.
 
 ## UPI payload support
 
@@ -44,9 +50,9 @@ QR codes must use the standard URI shape:
 upi://pay?pa=merchant@upi&pn=Merchant%20Name&am=100.50&cu=INR&tn=Note
 ```
 
-`am` is interpreted in **rupees** (per the UPI spec). The app validates the
-payee VPA, amount and currency, and rejects non-UPI QR codes with an inline
-message.
+`am` is interpreted in **rupees** (per the UPI spec). The parser validates the
+payee VPA, amount and currency, rejects non-UPI QR codes, and rejects amounts
+above ₹1,00,000.
 
 ## Getting started
 
@@ -61,40 +67,54 @@ npm run lint     # oxlint
 npm run preview  # preview the production build
 ```
 
-Camera access requires **HTTPS or localhost**. On desktop without a camera, use
-the image-upload fallback or enter a UPI ID manually.
+Camera access requires **HTTPS or localhost**. Without a camera, use the gallery
+upload or enter a UPI ID manually.
+
+## Simulated money
+
+- The wallet starts at **₹50,000** and is stored under `curie.balance.v1`.
+- Paying from **Curie Wallet** deducts the amount from the simulated balance.
+- Paying from the **simulated bank account** leaves the wallet untouched.
+- Reset the balance from Profile at any time.
 
 ## Project structure
 
 ```
 src/
+  App.tsx                  Navigation, balance, history and payment state machine
   components/
-    AmountInput.tsx        Keypad amount entry
+    AmountDisplay.tsx      Large amount readout
+    AmountKeypad.tsx       Decimal keypad with backspace
+    BottomNav.tsx          Home / History / Scan / Profile navigation
     ManualUpiForm.tsx      Validated manual VPA entry
-    Navbar.tsx             Top bar + mobile bottom tabs
-    ProcessingAnimation.tsx Pending state
-    QRScanner.tsx          Camera + image-upload scanner
-    SuccessAnimation.tsx   Success wipe + receipt reveal
+    ProcessingAnimation.tsx Two-second pending state
+    QRScanner.tsx          Camera, gallery upload and manual fallback
+    Sheet.tsx              Bottom sheet
+    SuccessScreen.tsx      Completion screen and actions
+    TransactionDetails.tsx Receipt overlay
     TransactionItem.tsx    History row
   pages/
-    Home.tsx  Scanner.tsx  Payment.tsx  History.tsx  Settings.tsx
+    Home.tsx  Payment.tsx  Scanner.tsx  History.tsx  Profile.tsx
   types/index.ts           Shared types
   utils/
+    amount.ts              Amount parsing and formatting
+    clipboard.ts           Clipboard helper
+    display.ts             Initials helper
+    funding.ts             Simulated funding sources and limits
+    share.ts               Native share + PNG receipt fallback
     sound.ts               Web Audio priming + chime playback
+    storage.ts             LocalStorage history, balance and sound
     upiParser.ts           UPI URI parsing + INR formatting
-    storage.ts             LocalStorage history, theme + sound helpers
 public/
   sounds/payment-success.wav  Success chime
-  App.tsx                  Navigation, theme and payment state machine
-  index.css                Tailwind v4 tokens, fonts and animations
 ```
 
 ## Privacy
 
 Everything happens in the browser. The camera feed is processed locally, and
-payment history, the theme preference and the sound preference are stored in
-`localStorage` under `paisa.*` keys. The success chime is bundled with the app,
-so it needs no network access.
+payment history, the simulated balance and the sound preference are stored in
+`localStorage` under `curie.*` keys. Legacy `paisa.*` keys are migrated on load.
+The success chime is bundled with the app, so it needs no network access.
 
 ## Limitations
 

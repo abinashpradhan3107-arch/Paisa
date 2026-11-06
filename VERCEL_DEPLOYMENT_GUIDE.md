@@ -1,7 +1,7 @@
-# PaySim - Vercel Deployment Guide
+# Curie - Vercel Deployment Guide
 
 ## Overview
-PaySim UPI Payment Simulator can be deployed to Vercel. The app is built with React + TypeScript + Vite.
+Curie is a dark, mobile-first UPI payment simulator built with React + TypeScript + Vite.
 
 ## Deployment Methods
 
@@ -63,12 +63,12 @@ vercel
 ## Important Notes
 
 ### ✅ What Works on Vercel
-- Home screen with PaySim logo
+- Home screen with the Curie wordmark
 - QR code scanning (may have camera limitations on web)
 - UPI payload parsing and display
 - Payment simulation flow
 - Transaction history (LocalStorage persists per user)
-- Dark/Light mode (system preference)
+- Dark-only theme
 - Navigation between pages
 
 ### ⚠️ Known Limitations on Vercel
@@ -79,7 +79,7 @@ vercel
 ### ❌ Not Affected
 - No real financial transactions (already simulated locally)
 - No bank connections (none exist)
-- DEMO badge and disclaimers (always displayed)
+- Simulation disclosure and disclaimers (always displayed)
 - Manual UPI ID entry
 - Payment confirmation animation
 - Transaction history (stored per session)
@@ -117,10 +117,10 @@ After deployment, verify:
 2. ✅ "Enter UPI ID manually" works (QR scanning limited on web)
 3. ✅ Payment simulation flow works
 4. ✅ History persists per session
-5. ✅ Dark/Light mode respects system preference
+5. ✅ Simulation disclosure is visible on every screen
 
 ## Repository
 
 The code is at: https://github.com/abinashpradhan3107-arch/Paisa
 
-Deploy your fork and the PaySim UPI Payment Simulator will be live!
+Deploy your fork and Curie, the UPI payment simulator, will be live!

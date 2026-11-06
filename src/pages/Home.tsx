@@ -1,133 +1,145 @@
-import { useEffect, useState } from 'react'
-import { ArrowUpRight, ScanLine } from 'lucide-react'
+import { useState } from 'react'
+import { ScanLine, Wallet } from 'lucide-react'
 import type { Transaction, UpiPayload } from '../types'
 import { formatINR } from '../utils/upiParser'
+import { parseAmount } from '../utils/amount'
+import { AmountDisplay } from '../components/AmountDisplay'
+import { AmountKeypad } from '../components/AmountKeypad'
 import { ManualUpiForm } from '../components/ManualUpiForm'
+import { Sheet } from '../components/Sheet'
 import { TransactionItem } from '../components/TransactionItem'
 
 interface HomeProps {
   transactions: Transaction[]
+  balance: number
+  amount: string
+  onAmountChange: (value: string) => void
   onScan: () => void
   onStartPayment: (payload: UpiPayload) => void
+  onOpenTransaction: (transaction: Transaction) => void
   onViewHistory: () => void
 }
 
-function greeting(date: Date): string {
-  const hour = date.getHours()
-  if (hour < 12) return 'Good morning'
-  if (hour < 17) return 'Good afternoon'
-  return 'Good evening'
-}
-
-function todayLabel(date: Date): string {
-  return date.toLocaleDateString('en-IN', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  })
-}
-
-/** Landing screen: one primary action, manual entry and recent activity. */
+/**
+ * Payment home: simulated balance, a large amount readout, the keypad and one
+ * clear route into the scanner.
+ */
 export function Home({
   transactions,
+  balance,
+  amount,
+  onAmountChange,
   onScan,
   onStartPayment,
+  onOpenTransaction,
   onViewHistory,
 }: HomeProps) {
-  const [now, setNow] = useState(() => new Date())
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date()), 60_000)
-    return () => window.clearInterval(timer)
-  }, [])
-
-  const monthTotal = transactions
-    .filter((item) => {
-      const date = new Date(item.timestamp)
-      return (
-        date.getMonth() === now.getMonth() &&
-        date.getFullYear() === now.getFullYear()
-      )
-    })
-    .reduce((sum, item) => sum + item.amount, 0)
-
-  const recent = transactions.slice(0, 4)
+  const [manualOpen, setManualOpen] = useState(false)
+  const parsedAmount = parseAmount(amount)
 
   return (
-    <div className="px-5 pb-28 pt-6 md:pb-10">
-      <header className="flex items-end justify-between gap-4">
+    <div className="animate-screen min-h-dvh px-5 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))]">
+      <header className="flex items-center justify-between">
+        <span className="font-display text-[28px] leading-none tracking-[-0.01em] text-ink">
+          curie
+        </span>
+        <span className="sim-pill">Simulated</span>
+      </header>
+
+      <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-faint">
+        Simulation · no money transferred
+      </p>
+
+      <div className="mt-5 flex items-center justify-between gap-4 rounded-2xl border border-line bg-card px-4 py-3">
         <div className="min-w-0">
-          <p className="label">{todayLabel(now)}</p>
-          <h1 className="mt-2 font-display text-[40px] leading-[0.95] tracking-[-0.01em] text-ink">
-            {greeting(now)}.
-          </h1>
-        </div>
-        <div className="shrink-0 text-right">
-          <p className="label">This month</p>
-          <p className="mt-1 text-base font-semibold tabular-nums text-ink">
-            {formatINR(monthTotal)}
+          <p className="label">Simulated balance</p>
+          <p className="mt-1 truncate font-display text-[26px] leading-none tabular-nums text-ink">
+            {formatINR(balance)}
           </p>
         </div>
-      </header>
+        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-card-2 px-2.5 py-1 text-[10px] font-medium text-ink-soft">
+          <Wallet className="h-3 w-3" strokeWidth={1.8} aria-hidden="true" />
+          Wallet
+        </span>
+      </div>
+
+      <div className="mt-6 flex items-center justify-between">
+        <p className="label">Amount</p>
+        {amount && (
+          <button
+            type="button"
+            onClick={() => onAmountChange('')}
+            className="text-[11px] font-medium text-ink-faint transition hover:text-ink"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+      <div className="mt-1">
+        <AmountDisplay value={amount} />
+      </div>
+
+      <div className="mt-2">
+        <AmountKeypad value={amount} onChange={onAmountChange} />
+      </div>
 
       <button
         type="button"
         onClick={onScan}
-        className="group mt-7 flex w-full items-center justify-between gap-4 rounded-2xl bg-ink px-5 py-5 text-left text-paper transition active:scale-[0.99]"
+        aria-label="Open QR scanner"
+        className="btn-primary mt-4 w-full"
       >
-        <span className="min-w-0">
-          <span className="block text-[10px] font-semibold uppercase tracking-[0.2em] text-paper/55">
-            Scan to pay
-          </span>
-          <span className="mt-2 block font-display text-2xl leading-tight">
-            Point at any UPI QR
-          </span>
-        </span>
-        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-paper/20 transition group-hover:bg-paper/10">
-          <ScanLine className="h-5 w-5" strokeWidth={1.6} aria-hidden="true" />
-        </span>
+        <ScanLine className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden="true" />
+        {parsedAmount ? `Scan to pay ${formatINR(parsedAmount)}` : 'Scan a QR code'}
       </button>
 
-      <section className="mt-8">
-        <div className="flex items-baseline justify-between gap-4">
-          <h2 className="label">Pay a UPI ID</h2>
-          <span className="text-[11px] text-ink-faint">No QR needed</span>
-        </div>
-        <ManualUpiForm onSubmit={onStartPayment} />
-      </section>
+      <div className="mt-3 text-center">
+        <button
+          type="button"
+          onClick={() => setManualOpen(true)}
+          className="btn-ghost min-h-11 px-2 text-xs"
+        >
+          or pay a UPI ID
+        </button>
+      </div>
 
-      <section className="mt-9">
-        <div className="flex items-baseline justify-between gap-4">
-          <h2 className="label">Recent</h2>
-          {transactions.length > 0 && (
+      {transactions.length > 0 && (
+        <section className="mt-7">
+          <div className="flex items-baseline justify-between gap-4">
+            <h2 className="label">Recent</h2>
             <button
               type="button"
               onClick={onViewHistory}
-              className="inline-flex items-center gap-0.5 text-xs text-ink-soft underline decoration-line underline-offset-4 transition hover:text-ink"
+              className="btn-ghost min-h-11 px-1 text-[11px]"
             >
               See all
-              <ArrowUpRight className="h-3 w-3" aria-hidden="true" />
             </button>
-          )}
-        </div>
-
-        {recent.length === 0 ? (
-          <p className="mt-3 max-w-xs text-sm leading-relaxed text-ink-soft">
-            Nothing yet. Scan a code or enter a UPI ID to make your first
-            payment.
-          </p>
-        ) : (
-          <ul className="mt-1 divide-y divide-line">
-            {recent.map((transaction) => (
-              <TransactionItem key={transaction.id} transaction={transaction} />
+          </div>
+          <ul className="mt-1 divide-y divide-line/60">
+            {transactions.slice(0, 3).map((transaction) => (
+              <TransactionItem
+                key={transaction.id}
+                transaction={transaction}
+                onOpen={onOpenTransaction}
+              />
             ))}
           </ul>
-        )}
-      </section>
+        </section>
+      )}
 
-      <p className="mt-10 text-[11px] leading-relaxed text-ink-faint">
-        Curie keeps your payment history on this device.
-      </p>
+      <Sheet
+        open={manualOpen}
+        onClose={() => setManualOpen(false)}
+        title="Pay a UPI ID"
+      >
+        <ManualUpiForm
+          autoFocus
+          onSubmit={(payload) => {
+            setManualOpen(false)
+            onStartPayment(payload)
+          }}
+        />
+      </Sheet>
     </div>
   )
 }
